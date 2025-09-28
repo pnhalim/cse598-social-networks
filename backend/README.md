@@ -20,7 +20,23 @@ A FastAPI-based backend API for the Study Buddy application that helps match stu
 - Python 3.7 or higher
 - pip (Python package installer)
 
-### Installation
+### Quick Setup (Recommended)
+
+**Option 1: Automated Setup Script**
+```bash
+cd backend
+
+# For Unix/Linux/macOS:
+./setup.sh
+
+# For Windows:
+setup.bat
+
+# Or using Python (cross-platform):
+python setup.py
+```
+
+**Option 2: Manual Setup**
 
 1. **Navigate to the backend directory:**
    ```bash
@@ -182,8 +198,17 @@ backend/
 ├── user_routes.py      # User-related API endpoints
 ├── general_routes.py   # General API endpoints (health check, etc.)
 ├── utils.py            # Utility functions
+├── email_config.py     # Email configuration
+├── email_service.py    # Email sending service
+├── email_templates/    # HTML email templates
 ├── requirements.txt    # Python dependencies
 ├── test_api.py        # API test suite
+├── db_manager.py      # Database management script
+├── setup.py           # Python setup script (cross-platform)
+├── setup.sh           # Unix/Linux/macOS setup script
+├── setup.bat          # Windows setup script
+├── env_example.txt    # Environment variables template
+├── .gitignore         # Git ignore file
 ├── study_buddy.db     # SQLite database (created automatically)
 └── README.md          # This file
 ```
