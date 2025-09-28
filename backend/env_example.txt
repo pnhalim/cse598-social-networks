@@ -1,0 +1,25 @@
+# Email Configuration
+# For Gmail, you'll need to use an App Password, not your regular password
+# Go to: Google Account > Security > 2-Step Verification > App passwords
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password-here
+MAIL_FROM=your-email@gmail.com
+MAIL_PORT=587
+MAIL_SERVER=smtp.gmail.com
+MAIL_FROM_NAME=Study Buddy
+
+# JWT Secret Key (change this in production!)
+SECRET_KEY=your-super-secret-key-change-in-production
+
+# For other email providers:
+# Outlook/Hotmail:
+# MAIL_SERVER=smtp-mail.outlook.com
+# MAIL_PORT=587
+
+# Yahoo:
+# MAIL_SERVER=smtp.mail.yahoo.com
+# MAIL_PORT=587
+
+# Custom SMTP:
+# MAIL_SERVER=your-smtp-server.com
+# MAIL_PORT=587
