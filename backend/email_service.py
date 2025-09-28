@@ -1,11 +1,10 @@
 from fastapi_mail import FastMail, MessageSchema
-from email_config import conf
+from email_config import conf, email_settings
 from jose import jwt
 from datetime import datetime, timedelta
-import os
 
 # Secret key for JWT tokens (in production, use a secure random key)
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+SECRET_KEY = email_settings.secret_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 

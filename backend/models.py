@@ -8,14 +8,16 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False)
-    gender = Column(String(20), nullable=False)
-    major = Column(String(100), nullable=False)
-    profile_picture = Column(String(255), nullable=True)  # URL or file path
     school_email = Column(String(120), unique=True, index=True, nullable=False)
-    academic_year = Column(String(20), nullable=False)
-    frontend_design = Column(String(20), nullable=False)  # 'design1' or 'design2'
+    password_hash = Column(String(255), nullable=True)  # Will be set after email verification
+    name = Column(String(100), nullable=True)  # Made optional for step-by-step registration
+    gender = Column(String(20), nullable=True)  # Made optional for step-by-step registration
+    major = Column(String(100), nullable=True)  # Made optional for step-by-step registration
+    profile_picture = Column(String(255), nullable=True)  # URL or file path
+    academic_year = Column(String(20), nullable=True)  # Made optional for step-by-step registration
+    frontend_design = Column(String(20), nullable=True)  # 'design1' or 'design2' - assigned after profile completion
     email_verified = Column(Boolean, nullable=True)  # None=pending, True=verified, False=rejected
+    profile_completed = Column(Boolean, default=False)  # Track if profile setup is complete
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

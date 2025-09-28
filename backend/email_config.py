@@ -13,6 +13,7 @@ class EmailSettings(BaseSettings):
     mail_ssl: bool = False
     use_credentials: bool = True
     validate_certs: bool = True
+    secret_key: str = "your-super-secret-key-change-in-production"  # JWT secret key
     
     class Config:
         env_file = ".env"

@@ -87,8 +87,26 @@ The application uses SQLite, which requires no additional setup. The database fi
 
 ## API Endpoints
 
-### User Registration
-- **POST** `/api/register` - Register a new user
+### Multi-Step User Registration
+The registration process is now split into three steps:
+
+#### Step 1: Email Submission
+- **POST** `/api/request-verification` - Submit email and send verification email
+- **Required fields**: school_email
+- **Email validation**: Must end with @umich.edu
+
+#### Step 2: Password Setup (after email verification)
+- **POST** `/api/setup-password/{token}` - Set password after email verification
+- **Required fields**: password, confirm_password
+- **Password requirements**: Minimum 8 characters
+
+#### Step 3: Profile Completion
+- **POST** `/api/complete-profile/{user_id}` - Complete profile setup
+- **Required fields**: name, gender, major, academic_year
+- **Optional fields**: profile_picture, classes_taking, classes_taken, learn_best_when, study_snack, favorite_study_spot, mbti, yap_to_study_ratio
+
+### Legacy Registration (Backward Compatibility)
+- **POST** `/api/register` - Register a new user (legacy endpoint)
 - **Required fields**: name, gender, major, school_email, academic_year
 - **Email validation**: Must end with @umich.edu
 
@@ -118,14 +136,22 @@ Make sure the Flask server is running before executing the tests.
 
 ## User Profile Fields
 
-### Required Fields
-- `name`: User's full name
-- `gender`: User's gender
-- `major`: Academic major
-- `school_email`: University email (must be @umich.edu)
-- `academic_year`: Current academic year
+### Multi-Step Registration Fields
 
-### Optional Fields
+#### Step 1: Email Submission
+- `school_email`: University email (must be @umich.edu) - **Required**
+
+#### Step 2: Password Setup
+- `password`: User's password (minimum 8 characters) - **Required**
+- `confirm_password`: Password confirmation - **Required**
+
+#### Step 3: Profile Completion
+- `name`: User's full name - **Required**
+- `gender`: User's gender - **Required**
+- `major`: Academic major - **Required**
+- `academic_year`: Current academic year - **Required**
+
+### Optional Profile Fields
 - `profile_picture`: URL or path to profile image
 - `classes_taking`: JSON string of current classes
 - `classes_taken`: JSON string of completed classes
@@ -134,6 +160,12 @@ Make sure the Flask server is running before executing the tests.
 - `favorite_study_spot`: Response to "Favorite study spot: ___ because ___"
 - `mbti`: Myers-Briggs Type Indicator
 - `yap_to_study_ratio`: Study vs socializing ratio
+
+### System Fields
+- `password_hash`: Hashed password (stored securely)
+- `email_verified`: Email verification status (null=pending, true=verified, false=rejected)
+- `profile_completed`: Whether profile setup is complete (boolean)
+- `frontend_design`: A/B testing assignment ('design1' or 'design2')
 
 ## A/B Testing
 
@@ -150,12 +182,19 @@ The application includes a comprehensive email verification system:
 ### Verification Status
 - **`null`** (Pending): User registered but hasn't verified email yet
 - **`true`** (Verified): User clicked verification link in email
-- **`false`** (Rejected): User clicked "This is not me" in email
+- **`false`** (Rejected): User clicked "This is not me" in email (account deleted)
 
-### Email Flow
+### New Multi-Step Registration Flow
+1. **Email Submission**: User submits email → Verification email sent automatically
+2. **Email Verification**: User clicks "Verify My Email" → Account marked as verified
+3. **Password Setup**: User sets password and confirms password
+4. **Profile Completion**: User fills out profile data (name, gender, major, etc.)
+5. **Account Ready**: User account is fully set up and ready to use
+
+### Legacy Email Flow (Backward Compatibility)
 1. **Registration**: User creates account → Verification email sent automatically
 2. **Verification**: User clicks "Verify My Email" → Account marked as verified
-3. **Rejection**: User clicks "This is Not Me" → Account marked as rejected
+3. **Rejection**: User clicks "This is Not Me" → Account deleted from database
 
 ### Email Configuration
 The system supports multiple email providers:
