@@ -6,7 +6,8 @@ from models import User
 from schemas import (
     UserCreate, UserUpdate, UserResponse, UserListResponse, MessageResponse, 
     EmailVerificationResponse, EmailSentResponse, EmailRequest, EmailRequestResponse,
-    PasswordSetup, PasswordSetupResponse, ProfileSetup, ProfileSetupResponse
+    PasswordSetup, PasswordSetupResponse, ProfileSetup, ProfileSetupResponse,
+    FilterOptionsResponse, PreferencesUpdate
 )
 from utils import assign_frontend_design
 from email_service import send_verification_email, verify_token
@@ -266,6 +267,20 @@ def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get
     
     return user
 
+@router.put("/user/{user_id}/preferences", response_model=UserResponse)
+def update_preferences(user_id: int, prefs: PreferencesUpdate, db: Session = Depends(get_db)):
+    """Update user's match preference flags."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    update_data = prefs.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(user, field, value)
+    db.commit()
+    db.refresh(user)
+    return user
+
 @router.post("/user/{user_id}/verify-email", response_model=UserResponse)
 def verify_email_manual(user_id: int, db: Session = Depends(get_db)):
     """Manually mark user's email as verified (for admin/testing purposes)"""
@@ -385,4 +400,51 @@ def reject_email_token(token: str, db: Session = Depends(get_db)):
 def get_all_users(db: Session = Depends(get_db)):
     """Get all users (for testing purposes)"""
     users = db.query(User).all()
+    return UserListResponse(users=users, total=len(users))
+
+@router.get("/filters/options", response_model=FilterOptionsResponse)
+def get_filter_options(db: Session = Depends(get_db)):
+    """Get distinct values for gender, major, and academic_year from users."""
+    genders = [row[0] for row in db.query(User.gender).filter(User.gender.isnot(None)).distinct().all()]
+    majors = [row[0] for row in db.query(User.major).filter(User.major.isnot(None)).distinct().all()]
+    academic_years = [row[0] for row in db.query(User.academic_year).filter(User.academic_year.isnot(None)).distinct().all()]
+    return FilterOptionsResponse(genders=genders, majors=majors, academic_years=academic_years)
+
+@router.get("/users/filter", response_model=UserListResponse)
+def filter_users(
+    user_id: int | None = None,
+    gender: str | None = None,
+    major: str | None = None,
+    academic_year: str | None = None,
+    db: Session = Depends(get_db)
+):
+    """Return users filtered by selected attributes.
+    - If user_id is provided, use that user's saved preferences to decide which fields to match.
+    - If explicit gender/major/academic_year params are provided, they act as additional constraints.
+    """
+    query = db.query(User)
+
+    base_user = None
+    if user_id is not None:
+        base_user = db.query(User).filter(User.id == user_id).first()
+        if not base_user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        query = query.filter(User.id != user_id)
+        # Apply saved preferences as constraints
+        if getattr(base_user, "match_by_gender", False) and base_user.gender:
+            query = query.filter(User.gender == base_user.gender)
+        if getattr(base_user, "match_by_major", False) and base_user.major:
+            query = query.filter(User.major == base_user.major)
+        if getattr(base_user, "match_by_academic_year", False) and base_user.academic_year:
+            query = query.filter(User.academic_year == base_user.academic_year)
+
+    # Apply any explicit constraints provided
+    if gender:
+        query = query.filter(User.gender == gender)
+    if major:
+        query = query.filter(User.major == major)
+    if academic_year:
+        query = query.filter(User.academic_year == academic_year)
+
+    users = query.all()
     return UserListResponse(users=users, total=len(users))

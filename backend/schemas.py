@@ -97,6 +97,10 @@ class UserResponse(UserBase):
     profile_completed: Optional[bool] = None  # Track if profile setup is complete
     created_at: datetime
     updated_at: Optional[datetime] = None
+    # Preference flags
+    match_by_gender: Optional[bool] = None
+    match_by_major: Optional[bool] = None
+    match_by_academic_year: Optional[bool] = None
 
     class Config:
         from_attributes = True
@@ -131,3 +135,19 @@ class PasswordSetupResponse(BaseModel):
 class ProfileSetupResponse(BaseModel):
     message: str
     user: UserResponse
+
+# New filter schemas
+class FilterOptionsResponse(BaseModel):
+    genders: list[str]
+    majors: list[str]
+    academic_years: list[str]
+
+class UserFilterParams(BaseModel):
+    gender: Optional[str] = None
+    major: Optional[str] = None
+    academic_year: Optional[str] = None
+
+class PreferencesUpdate(BaseModel):
+    match_by_gender: Optional[bool] = None
+    match_by_major: Optional[bool] = None
+    match_by_academic_year: Optional[bool] = None

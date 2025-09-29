@@ -29,3 +29,8 @@ class User(Base):
     favorite_study_spot = Column(Text, nullable=True)
     mbti = Column(String(10), nullable=True)
     yap_to_study_ratio = Column(String(50), nullable=True)
+
+    # Match preference flags
+    match_by_gender = Column(Boolean, default=False)
+    match_by_major = Column(Boolean, default=False)
+    match_by_academic_year = Column(Boolean, default=False)
