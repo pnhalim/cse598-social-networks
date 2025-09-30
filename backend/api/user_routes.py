@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
 from core.database import get_db
@@ -8,6 +8,7 @@ from models.schemas import (
     FilterOptionsResponse, PreferencesUpdate
 )
 from services.utils import assign_frontend_design
+from services.image_service import image_service
 from config.auth_dependencies import get_current_user, get_current_active_user
 
 # Create router for user management routes
@@ -147,6 +148,63 @@ def verify_email_manual(user_id: int, current_user: User = Depends(get_current_a
         )
     
     current_user.email_verified = True
+    db.commit()
+    db.refresh(current_user)
+    
+    return current_user
+
+# Upload profile picture
+@router.post("/user/{user_id}/profile-picture", response_model=UserResponse)
+async def upload_profile_picture(
+    user_id: int, 
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Upload a profile picture for the user"""
+    # Users can only upload their own profile picture
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only upload your own profile picture"
+        )
+    
+    try:
+        # Upload image to Cloudinary
+        image_url = await image_service.upload_profile_picture(file, user_id)
+        
+        # Update user's profile picture URL
+        current_user.profile_picture = image_url
+        db.commit()
+        db.refresh(current_user)
+        
+        return current_user
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload profile picture: {str(e)}"
+        )
+
+# Delete profile picture
+@router.delete("/user/{user_id}/profile-picture", response_model=UserResponse)
+def delete_profile_picture(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete the user's profile picture"""
+    # Users can only delete their own profile picture
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only delete your own profile picture"
+        )
+    
+    # Clear the profile picture URL
+    current_user.profile_picture = None
     db.commit()
     db.refresh(current_user)
     

@@ -23,3 +23,9 @@ SECRET_KEY=your-super-secret-key-change-in-production
 # Custom SMTP:
 # MAIL_SERVER=your-smtp-server.com
 # MAIL_PORT=587
+
+# Cloudinary Configuration (for image uploads)
+# Sign up at https://cloudinary.com and get these values from your dashboard
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
