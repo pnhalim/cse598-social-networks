@@ -6,6 +6,7 @@ from api.auth_routes import router as auth_router
 from api.user_routes import router as user_router
 from api.general_routes import router as general_router
 from api.mutual_matching_routes import router as mutual_matching_router
+from api.list_view import router as list_view_router
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -33,6 +34,10 @@ app = FastAPI(
             "name": "mutual matching",
             "description": "Mutual matching operations for design2 users",
         },
+        {
+            "name": "design1 list view",
+            "description": "List view operations with cursor pagination for design1 users",
+        },
     ]
 )
 
@@ -50,6 +55,7 @@ app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(general_router)
 app.include_router(mutual_matching_router)
+app.include_router(list_view_router)
 
 # Custom OpenAPI schema to add security schemes
 def custom_openapi():

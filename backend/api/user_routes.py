@@ -33,17 +33,10 @@ def get_user(user_id: int, current_user: User = Depends(get_current_user), db: S
     
     return current_user
 
-# Update user profile (users can only update their own profile)
-@router.put("/user/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, user_update: UserUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Update user profile (users can only update their own profile)"""
-    # Users can only update their own profile
-    if current_user.id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only update your own profile"
-        )
-    
+# Update current user's profile (no user_id path param)
+@router.put("/user/update", response_model=UserResponse)
+def update_user(user_update: UserUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Update the authenticated user's profile"""
     # Update fields that are provided
     update_data = user_update.dict(exclude_unset=True)
     for field, value in update_data.items():
@@ -54,17 +47,10 @@ def update_user(user_id: int, user_update: UserUpdate, current_user: User = Depe
     
     return current_user
 
-# Update user preferences
-@router.put("/user/{user_id}/preferences", response_model=UserResponse)
-def update_preferences(user_id: int, prefs: PreferencesUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Update user's match preference flags (users can only update their own preferences)"""
-    # Users can only update their own preferences
-    if current_user.id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only update your own preferences"
-        )
-    
+# Update current user's preferences (no user_id path param)
+@router.put("/user/preferences", response_model=UserResponse)
+def update_preferences(prefs: PreferencesUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Update the authenticated user's match preference flags"""
     # Update preference flags
     if prefs.match_by_gender is not None:
         current_user.match_by_gender = prefs.match_by_gender

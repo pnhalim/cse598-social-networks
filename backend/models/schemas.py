@@ -196,3 +196,31 @@ class MutualMatchResponse(BaseModel):
 class MutualMatchesResponse(BaseModel):
     matches: List[MutualMatchResponse]
     total: int
+
+class CursorPageParams(BaseModel):
+    cursor: Optional[int] = None  # exclusive user.id to start after
+    limit: int = 20
+
+class ListUserSummary(BaseModel):
+    id: int
+    name: Optional[str] = None
+    gender: Optional[str] = None
+    major: Optional[str] = None
+    academic_year: Optional[str] = None
+    profile_picture: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class CursorPageResponse(BaseModel):
+    items: List[ListUserSummary]
+    next_cursor: Optional[int] = None
+    has_more: bool
+
+class SelectBuddyRequest(BaseModel):
+    selected_user_id: int
+
+class SelectBuddyResponse(BaseModel):
+    message: str
+    selected_user_id: int
+    selected_user_email: str

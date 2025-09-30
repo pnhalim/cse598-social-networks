@@ -58,3 +58,19 @@ class UserApproval(Base):
     __table_args__ = (
         {"extend_existing": True}
     )
+
+
+class UserSelection(Base):
+    __tablename__ = "user_selections"
+
+    id = Column(Integer, primary_key=True, index=True)
+    selector_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    selected_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Optional relationships
+    # Not creating back_populates on User to avoid unintended loading; can be added later if needed
+
+    __table_args__ = (
+        {"sqlite_autoincrement": True},
+    )
