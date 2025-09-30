@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from schemas import HealthResponse
+from models.schemas import HealthResponse
 
 # Create router for general routes
 router = APIRouter(prefix="/api", tags=["general"])

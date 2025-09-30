@@ -1,5 +1,5 @@
 from fastapi_mail import FastMail, MessageSchema
-from email_config import conf, email_settings
+from config.email_config import conf, email_settings
 from jose import jwt
 from datetime import datetime, timedelta
 

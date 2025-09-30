@@ -64,8 +64,8 @@ echo "✅ Directories created"
 # Initialize database
 echo "🔄 Initializing database..."
 python3 -c "
-from database import engine
-from models import Base
+from core.database import engine
+from models.models import Base
 Base.metadata.create_all(bind=engine)
 print('✅ Database initialized successfully')
 "
