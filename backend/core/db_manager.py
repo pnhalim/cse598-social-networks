@@ -7,8 +7,8 @@ Provides easy command-line access to view and modify the database
 import sys
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from models import User, Base
-from database import SQLALCHEMY_DATABASE_URL
+from models.models import User, Base
+from core.database import SQLALCHEMY_DATABASE_URL
 
 def create_session():
     """Create a database session"""

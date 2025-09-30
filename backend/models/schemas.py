@@ -1,5 +1,5 @@
 from pydantic import BaseModel, validator
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 # Step 1: Email submission
@@ -43,8 +43,8 @@ class ProfileSetup(BaseModel):
     major: str
     academic_year: str
     profile_picture: Optional[str] = None
-    classes_taking: Optional[str] = None
-    classes_taken: Optional[str] = None
+    classes_taking: Optional[List[str]] = None
+    classes_taken: Optional[List[str]] = None
     learn_best_when: Optional[str] = None
     study_snack: Optional[str] = None
     favorite_study_spot: Optional[str] = None
@@ -59,8 +59,8 @@ class UserBase(BaseModel):
     school_email: str
     academic_year: Optional[str] = None
     profile_picture: Optional[str] = None
-    classes_taking: Optional[str] = None
-    classes_taken: Optional[str] = None
+    classes_taking: Optional[List[str]] = None
+    classes_taken: Optional[List[str]] = None
     learn_best_when: Optional[str] = None
     study_snack: Optional[str] = None
     favorite_study_spot: Optional[str] = None
@@ -82,8 +82,8 @@ class UserUpdate(BaseModel):
     major: Optional[str] = None
     profile_picture: Optional[str] = None
     academic_year: Optional[str] = None
-    classes_taking: Optional[str] = None
-    classes_taken: Optional[str] = None
+    classes_taking: Optional[List[str]] = None
+    classes_taken: Optional[List[str]] = None
     learn_best_when: Optional[str] = None
     study_snack: Optional[str] = None
     favorite_study_spot: Optional[str] = None
@@ -134,6 +134,22 @@ class PasswordSetupResponse(BaseModel):
 
 class ProfileSetupResponse(BaseModel):
     message: str
+    user: UserResponse
+
+# Authentication schemas
+class LoginRequest(BaseModel):
+    school_email: str
+    password: str
+    
+    @validator('school_email')
+    def validate_email(cls, v):
+        if not v.endswith('@umich.edu'):
+            raise ValueError('Email must be a valid @umich.edu email address')
+        return v
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
     user: UserResponse
 
 # New filter schemas

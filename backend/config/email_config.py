@@ -17,6 +17,7 @@ class EmailSettings(BaseSettings):
     
     class Config:
         env_file = ".env"
+        extra = "ignore"  # Allow extra fields in .env file
 
 email_settings = EmailSettings()
 

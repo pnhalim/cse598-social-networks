@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, JSON
 from sqlalchemy.sql import func
-from database import Base
+from core.database import Base
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 class User(Base):
     __tablename__ = "users"
@@ -22,8 +22,8 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Additional profile information
-    classes_taking = Column(Text, nullable=True)  # JSON string of current classes
-    classes_taken = Column(Text, nullable=True)   # JSON string of past classes
+    classes_taking = Column(JSON, nullable=True)  # List of current classes
+    classes_taken = Column(JSON, nullable=True)   # List of past classes
     learn_best_when = Column(Text, nullable=True)
     study_snack = Column(Text, nullable=True)
     favorite_study_spot = Column(Text, nullable=True)
