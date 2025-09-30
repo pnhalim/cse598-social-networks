@@ -1,11 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import collageUrl from "./assets/collage.jpg";
+
 export default function StudyBuddy() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [showOverlay, setShowOverlay] = useState(true);
-  const [overlayLeaving, setOverlayLeaving] = useState(false)
+  const [overlayLeaving, setOverlayLeaving] = useState(false);
+
+  // swipe state
+  const [dragOffset, setDragOffset] = useState(0);
+  const startYRef = useRef(null);
+  const startTRef = useRef(0);
+  const draggingRef = useRef(false);
+
   const formRef = useRef(null);
 
   function handleSubmit(e) {
@@ -14,20 +23,52 @@ export default function StudyBuddy() {
   }
 
   useEffect(() => {
-    // focus the first input when toggling modes
     formRef.current?.querySelector("input")?.focus();
   }, [isSignUp]);
 
   const dismissOverlay = () => {
     if (!showOverlay || overlayLeaving) return;
-    setOverlayLeaving(true); // triggers slide-up animation
+    setOverlayLeaving(true);
   };
+
+  function onOverlayPointerDown(e) {
+    if (!showOverlay || overlayLeaving) return;
+    const y = "touches" in e ? e.touches[0].clientY : e.clientY;
+    draggingRef.current = true;
+    startYRef.current = y;
+    startTRef.current = performance.now();
+    setDragOffset(0);
+    e.target.setPointerCapture?.(e.pointerId);
+  }
+
+  function onOverlayPointerMove(e) {
+    if (!draggingRef.current) return;
+    const y = "touches" in e ? e.touches[0].clientY : e.clientY;
+    const dy = y - startYRef.current;
+    setDragOffset(Math.min(0, dy));
+  }
+
+  function onOverlayPointerUp() {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+
+    const elapsed = Math.max(1, performance.now() - startTRef.current);
+    const velocity = (-dragOffset) / elapsed;
+    const passedDistance = dragOffset <= -80;
+    const passedVelocity = velocity >= 0.35;
+
+    if (passedDistance || passedVelocity) {
+      dismissOverlay();
+    } else {
+      setDragOffset(0);
+    }
+  }
 
   return (
     <div className="hero-wrap">
       <style>{`
         :root{
-          --maize:#FFCD00;          /* Bumble/maize-like highlight */
+          --maize:#FFCD00;
           --ink:#0a0b0d;
           --ink-2:#1a1d21;
           --fg:#EAEFF5;
@@ -55,18 +96,15 @@ export default function StudyBuddy() {
           padding:16px;
         }
 
-        /* Top bar */
         .brand {
           position:fixed;
           top:16px; left:20px;
           font-weight:900;
-          letter-spacing:.3px;
           font-size: clamp(22px, 2.2vw, 28px);
           color:#eceff4;
           text-shadow: 0 2px 10px rgba(0,0,0,.35);
         }
 
-        /* Center stack */
         .center{
           place-self:center;
           text-align:center;
@@ -78,11 +116,7 @@ export default function StudyBuddy() {
         .headline{
           font-size:clamp(32px, 7vw, 72px);
           font-weight:900;
-          line-height:1.02;
-          letter-spacing:.8px;
-          text-transform:uppercase;
           color:var(--maize);
-          text-shadow: 0 10px 30px rgba(0,0,0,.45);
           margin:0;
         }
 
@@ -90,11 +124,9 @@ export default function StudyBuddy() {
           margin: 2px 0 6px;
           color:var(--muted);
           font-weight:700;
-          letter-spacing:.2px;
           font-size:clamp(14px, 1.5vw, 18px);
         }
 
-        /* Auth card */
         .card{
           margin: 4px auto 0;
           width:min(420px, 92vw);
@@ -102,16 +134,10 @@ export default function StudyBuddy() {
           border:1px solid rgba(255,255,255,.12);
           border-radius:18px;
           padding:18px;
-          box-shadow: 0 24px 60px -24px rgba(0,0,0,.6);
           backdrop-filter: blur(10px);
         }
 
-        .tabs{
-          display:flex;
-          gap:8px;
-          justify-content:center;
-          margin-bottom:10px;
-        }
+        .tabs{ display:flex; gap:8px; justify-content:center; margin-bottom:10px; }
         .tab{
           border:1px solid rgba(255,255,255,.18);
           background:#161a21;
@@ -124,16 +150,10 @@ export default function StudyBuddy() {
         .tab[aria-selected="true"]{
           background:var(--maize);
           color:#111;
-          border-color:transparent;
-          box-shadow:0 10px 22px -10px var(--ring);
         }
 
-        .form{
-          display:grid; gap:12px; margin-top:4px;
-        }
-        .label{
-          text-align:left; font-weight:700; color:#ced9e4; font-size:14px;
-        }
+        .form{ display:grid; gap:12px; margin-top:4px; }
+        .label{ text-align:left; font-weight:700; color:#ced9e4; font-size:14px; }
         .input{
           width:100%;
           padding:12px 12px;
@@ -141,11 +161,8 @@ export default function StudyBuddy() {
           background:#0c1016;
           border:1px solid #2a3442;
           color:#eef5ff;
-          outline:2px solid transparent; outline-offset:2px;
           font-size:16px;
         }
-        .input:focus{ border-color:#405b7a; outline-color:var(--ring); }
-
         .btn{
           width:100%;
           padding:12px 14px;
@@ -154,74 +171,131 @@ export default function StudyBuddy() {
           background:var(--maize);
           color:#111;
           font-weight:900;
-          cursor:pointer;
-          box-shadow:0 14px 30px -14px var(--ring);
-        }
-        .btn:hover{ filter:brightness(.98); }
-        .btn:active{ transform:translateY(1px); }
-
-        .switch{
-          margin-top:6px; color:#cdd9e3; font-size:14px;
-        }
-        .link{
-          background:none; border:0; color:var(--maize);
-          font-weight:800; cursor:pointer; padding:0 4px;
         }
 
         .overlay{
           position:fixed; inset:0; z-index:10;
           display:grid; place-items:center;
           transform:translateY(0);
-          transition:transform 800ms cubic-bezier(.22,.8,.18,1),
-                     opacity 400ms ease;
+          transition:transform 800ms cubic-bezier(.22,.8,.18,1), opacity 400ms ease;
           will-change:transform,opacity;
+          touch-action: pan-y;
+          container-type:size;
         }
         .overlay::before{
           content:"";
           position:absolute; inset:0;
           background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.55));
-          pointer-events:none;
         }
         .overlay.is-exiting{ transform:translateY(-100%); opacity:0; }
-        .overlay .hint{
-          position:relative;
-          padding:10px 14px; border-radius:999px;
-          background:rgba(0,0,0,.55); color:#fff; font-weight:900;
-          letter-spacing:.3px; box-shadow:0 8px 24px rgba(0,0,0,.35);
-          user-select:none;
-        }
-        @media (prefers-reduced-motion: reduce){
-          .overlay{ transition:none; }
-        }
+        .overlay.is-dragging{ transition:none; }
 
+        .overlay-title{
+          position:absolute;
+
+          display:grid;
+          place-items:center;
+          text-align:center;
+
+          pointer-events:none;
+          z-index:1;
+        }
+        .overlay-title .study,
+        .overlay-title .buddy{
+          margin:0;
+          font-weight:900;
+          text-transform:uppercase;
+          -webkit-text-stroke: 2px rgba(0,0,0,.35);
+          text-shadow:0 8px 24px rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.35);
+        }
+        @supports (font-size: 1cqi){
+          .overlay-title .study,
+          .overlay-title .buddy{
+            font-size: clamp(80px, min(28cqi, 28cqb), 400px);
+          }
+        }
+        @supports not (font-size: 1cqi){
+          .overlay-title .study,
+          .overlay-title .buddy{
+            font-size: clamp(80px, min(18vw, 20vh), 400px);
+          }
+        }
+        .overlay-title .study{ color:#00274C; }
+        .overlay-title .buddy{ color:#FFCB05; }
+
+        .swipe-hint{
+          position:absolute;
+          bottom: clamp(20px, 6vh, 64px);
+          left:50%;
+          transform:translateX(-50%);
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          pointer-events:none;
+          z-index:1;
+        }
+        .swipe-hint .label{
+          font-weight:900;
+          color:#fff;
+          background:rgba(0,0,0,.45);
+          border-radius:999px;
+          font-size:20px;
+        }
+        .arrow-big{
+          width:28px; height:28px;
+          border-left:4px solid #fff;
+          border-top:4px solid #fff;
+          transform:rotate(45deg);
+          animation:floatUpBig 1.4s infinite ease-in-out;
+        }
+        @keyframes floatUpBig{
+          0%   { transform: translateY(10px) rotate(45deg); opacity:0; }
+          30%  { opacity:1; }
+          100% { transform: translateY(-8px) rotate(45deg); opacity:0; }
+        }
       `}</style>
 
       {showOverlay && (
         <div
-          className={`overlay ${overlayLeaving ? "is-exiting" : ""}`}
+          className={`overlay ${overlayLeaving ? "is-exiting" : ""} ${dragOffset !== 0 ? "is-dragging" : ""}`}
           style={{
             backgroundImage: `url(${collageUrl})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
+            transform: overlayLeaving ? undefined : `translateY(${dragOffset}px)`
           }}
           role="button"
-          aria-label="Enter — slide collage away"
+          aria-label="Swipe up to continue"
           tabIndex={0}
           onClick={dismissOverlay}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && dismissOverlay()}
+          onPointerDown={onOverlayPointerDown}
+          onPointerMove={onOverlayPointerMove}
+          onPointerUp={onOverlayPointerUp}
+          onPointerCancel={onOverlayPointerUp}
+          onTouchStart={onOverlayPointerDown}
+          onTouchMove={onOverlayPointerMove}
+          onTouchEnd={onOverlayPointerUp}
           onTransitionEnd={() => {
-            if (overlayLeaving) setShowOverlay(false); // unmount after slide
+            if (overlayLeaving) setShowOverlay(false);
+            if (!overlayLeaving && dragOffset !== 0) setDragOffset(0);
           }}
         >
-          <div className="hint">Click to continue</div>
+          <div className="overlay-title" aria-hidden="true">
+            <div className="study">STUDY</div>
+            <div className="buddy">BUDDY</div>
+          </div>
+
+          <div className="swipe-hint" aria-hidden="true">
+            <div className="arrow-big" />
+            <div className="label">Swipe up</div>
+          </div>
         </div>
       )}
-      
-      {/* top-left brand */}
+
       <div className="brand">Study Buddy</div>
 
-      {/* center: headline + sub + auth card */}
       <div className="center">
         <h1 className="headline">Bit by Bit</h1>
         <h1 className="headline">Side by side</h1>
@@ -230,33 +304,16 @@ export default function StudyBuddy() {
 
         <section className="card" aria-label="Authentication">
           <div className="tabs" role="tablist" aria-label="Auth switch">
-            <button
-              className="tab"
-              role="tab"
-              aria-selected={!isSignUp}
-              onClick={() => setIsSignUp(false)}
-            >
+            <button className="tab" role="tab" aria-selected={!isSignUp} onClick={() => setIsSignUp(false)}>
               Log in
             </button>
-            <button
-              className="tab"
-              role="tab"
-              aria-selected={isSignUp}
-              onClick={() => setIsSignUp(true)}
-            >
+            <button className="tab" role="tab" aria-selected={isSignUp} onClick={() => setIsSignUp(true)}>
               Sign up
             </button>
           </div>
 
-          <form
-            ref={formRef}
-            className="form"
-            onSubmit={handleSubmit}
-            noValidate
-          >
-            <label className="label" htmlFor="email">
-              Email
-            </label>
+          <form ref={formRef} className="form" onSubmit={handleSubmit} noValidate>
+            <label className="label" htmlFor="email">Email</label>
             <input
               id="email"
               className="input"
@@ -267,9 +324,7 @@ export default function StudyBuddy() {
               required
             />
 
-            <label className="label" htmlFor="password">
-              Password
-            </label>
+            <label className="label" htmlFor="password">Password</label>
             <input
               id="password"
               className="input"
@@ -286,11 +341,7 @@ export default function StudyBuddy() {
 
             <div className="switch">
               {isSignUp ? "Already have an account?" : "Don’t have an account?"}
-              <button
-                type="button"
-                className="link"
-                onClick={() => setIsSignUp(!isSignUp)}
-              >
+              <button type="button" className="link" onClick={() => setIsSignUp(!isSignUp)}>
                 {isSignUp ? "Log in" : "Sign up"}
               </button>
             </div>
