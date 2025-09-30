@@ -6,26 +6,22 @@ from datetime import datetime, timedelta
 # Secret key for JWT tokens (in production, use a secure random key)
 SECRET_KEY = email_settings.secret_key
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_HOURS = 24
 
 def create_verification_token(user_id: int, action: str) -> str:
-    """Create a JWT token for email verification"""
-    expire = datetime.utcnow() + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+    """Create a JWT token for email verification (no expiration)"""
+    # Remove expiration - tokens will last forever
     to_encode = {
         "user_id": user_id,
         "action": action,  # "verify" or "reject"
-        "exp": expire
     }
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 def verify_token(token: str) -> dict:
-    """Verify and decode a JWT token"""
+    """Verify and decode a JWT token (no expiration check)"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
-    except jwt.ExpiredSignatureError:
-        raise ValueError("Token has expired")
     except jwt.JWTError:
         raise ValueError("Invalid token")
 

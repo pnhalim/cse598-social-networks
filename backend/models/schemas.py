@@ -167,3 +167,32 @@ class PreferencesUpdate(BaseModel):
     match_by_gender: Optional[bool] = None
     match_by_major: Optional[bool] = None
     match_by_academic_year: Optional[bool] = None
+
+# Mutual matching schemas
+class ApprovalRequest(BaseModel):
+    approved_user_id: int
+    is_approved: bool  # True for approval, False for rejection
+
+class ApprovalResponse(BaseModel):
+    message: str
+    approval_id: int
+
+class MutualMatchResponse(BaseModel):
+    id: int
+    name: str
+    school_email: str
+    gender: Optional[str] = None
+    major: Optional[str] = None
+    academic_year: Optional[str] = None
+    profile_picture: Optional[str] = None
+    classes_taking: Optional[List[str]] = None
+    learn_best_when: Optional[str] = None
+    study_snack: Optional[str] = None
+    favorite_study_spot: Optional[str] = None
+    mbti: Optional[str] = None
+    yap_to_study_ratio: Optional[str] = None
+    matched_at: datetime
+
+class MutualMatchesResponse(BaseModel):
+    matches: List[MutualMatchResponse]
+    total: int

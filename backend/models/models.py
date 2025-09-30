@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, JSON, ForeignKey
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from core.database import Base
 from datetime import datetime
 from typing import Optional, List
@@ -34,3 +35,26 @@ class User(Base):
     match_by_gender = Column(Boolean, default=False)
     match_by_major = Column(Boolean, default=False)
     match_by_academic_year = Column(Boolean, default=False)
+    
+    # Relationships for mutual matching
+    approvals_given = relationship("UserApproval", foreign_keys="UserApproval.approver_id", back_populates="approver")
+    approvals_received = relationship("UserApproval", foreign_keys="UserApproval.approved_user_id", back_populates="approved_user")
+
+
+class UserApproval(Base):
+    __tablename__ = "user_approvals"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    approver_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    approved_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    is_approved = Column(Boolean, nullable=False)  # True for approval, False for rejection
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    approver = relationship("User", foreign_keys=[approver_id], back_populates="approvals_given")
+    approved_user = relationship("User", foreign_keys=[approved_user_id], back_populates="approvals_received")
+    
+    # Ensure a user can only approve/reject another user once
+    __table_args__ = (
+        {"extend_existing": True}
+    )

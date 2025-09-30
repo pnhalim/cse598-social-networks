@@ -5,6 +5,7 @@ from models.models import Base
 from api.auth_routes import router as auth_router
 from api.user_routes import router as user_router
 from api.general_routes import router as general_router
+from api.mutual_matching_routes import router as mutual_matching_router
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -28,6 +29,10 @@ app = FastAPI(
             "name": "general",
             "description": "General API operations",
         },
+        {
+            "name": "mutual matching",
+            "description": "Mutual matching operations for design2 users",
+        },
     ]
 )
 
@@ -44,6 +49,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(general_router)
+app.include_router(mutual_matching_router)
 
 # Custom OpenAPI schema to add security schemes
 def custom_openapi():
