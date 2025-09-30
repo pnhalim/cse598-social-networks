@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from core.database import get_db
 from models.models import User, UserSelection
 from models.schemas import (
@@ -30,6 +30,25 @@ def _apply_user_preferences_query(db: Session, current_user: User):
         query = query.filter(User.major == current_user.major)
     if current_user.match_by_academic_year and current_user.academic_year:
         query = query.filter(User.academic_year == current_user.academic_year)
+
+    # Also respect the candidate users' preferences: if they toggled a filter, they require a match
+    # Candidate requires same gender
+    if current_user.gender:
+        query = query.filter(or_(User.match_by_gender == False, User.gender == current_user.gender))
+    else:
+        query = query.filter(User.match_by_gender == False)
+
+    # Candidate requires same major
+    if current_user.major:
+        query = query.filter(or_(User.match_by_major == False, User.major == current_user.major))
+    else:
+        query = query.filter(User.match_by_major == False)
+
+    # Candidate requires same academic year
+    if current_user.academic_year:
+        query = query.filter(or_(User.match_by_academic_year == False, User.academic_year == current_user.academic_year))
+    else:
+        query = query.filter(User.match_by_academic_year == False)
 
     return query
 
