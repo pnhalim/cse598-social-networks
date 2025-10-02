@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import collageUrl from "./assets/collage.jpg";
+import { login, requestVerification } from "./authService";
 
 export default function StudyBuddy() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -19,7 +20,34 @@ export default function StudyBuddy() {
 
   function handleSubmit(e) {
     e.preventDefault();
-    console.log(isSignUp ? "Sign up:" : "Log in:", { email, password });
+    if (isSignUp) {
+      // sign-up: request verification email
+      requestVerification(email)
+        .then(() => {
+          alert("Check your email for a verification link!");
+        })
+        .catch((err) => {
+          console.error("Signup error:", {
+            status: err.response?.status,
+            data: err.response?.data,
+            url: err.config?.url,
+            baseURL: err.config?.baseURL,
+          });
+          alert("Error creating account");
+        });        
+    } else {
+      // login
+      login(email, password)
+        .then((res) => {
+          const token = res.data.access_token || res.data.token;
+          localStorage.setItem("jwt", token);
+          alert("Logged in!");
+        })
+        .catch((err) => {
+          console.error(err);
+          alert("Login failed");
+        });
+    }
   }
 
   useEffect(() => {
