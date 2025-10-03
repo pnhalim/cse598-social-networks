@@ -34,7 +34,7 @@ export default function StudyBuddy() {
             baseURL: err.config?.baseURL,
           });
           alert("Error creating account");
-        });        
+        });
     } else {
       // login
       login(email, password)
@@ -117,6 +117,12 @@ export default function StudyBuddy() {
             radial-gradient(80% 120% at 50% -10%, #2a3139 0%, transparent 55%),
             radial-gradient(80% 120% at 50% 110%, #191c22 0%, transparent 55%),
             linear-gradient(180deg, #0e1217 0%, #0b0e13 100%);
+          background-image: url(${collageUrl});
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          background-blend-mode: overlay;
+          background-color: rgba(14, 18, 23, 0.85); /* dark wash */
           color:var(--fg);
           font-family:var(--font);
           position:relative;
