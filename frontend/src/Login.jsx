@@ -357,17 +357,21 @@ export default function StudyBuddy() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-
-            <label className="label" htmlFor="password">Password</label>
-            <input
-              id="password"
-              className="input"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            
+            {!isSignUp && (
+              <>
+                <label className="label" htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  className="input"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </>
+            )}
 
             <button className="btn" type="submit">
               {isSignUp ? "Create account" : "Log in"}
