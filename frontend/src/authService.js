@@ -1,13 +1,19 @@
 import api from "./api";
 
+// Step 1: request verification — requires { school_email }
 export const requestVerification = (email) =>
-    api.post("/api/request-verification", { school_email: email.trim() });  
+  api.post("/api/request-verification", { school_email: email.trim() });
 
-export const verifyEmail = (token) =>
-  api.get(`/api/verify-email/${token}`);
-
+// Step 2: set password — token is a PATH param, body must include confirm_password
 export const setPassword = (token, password) =>
-  api.post("/api/setup-password", { token, password });
+  api.post(`/api/setup-password/${token}`, {
+    password,
+    confirm_password: password,
+  });
 
+// Step 4: login — body must use school_email (not email)
 export const login = (email, password) =>
-  api.post("/api/login", { email, password });
+  api.post("/api/login", { school_email: email.trim(), password });
+
+// Optional protected calls
+export const me = () => api.get("/api/me");
