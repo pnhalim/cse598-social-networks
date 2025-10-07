@@ -1,34 +1,35 @@
+// src/VerifyEmail.jsx
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import api from "./api";
 
 export default function VerifyEmail() {
   const { token } = useParams();
   const nav = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [status, setStatus] = useState("Verifying your email…");
 
   useEffect(() => {
+    let isMounted = true;
     (async () => {
       try {
-        // Tell backend to mark email as verified
-        await api.get(`/api/verify-email/${token}`);
-        // After success, send user to set-password page
-        nav(`/set-password/${token}`, { replace: true });
-      } catch (err) {
-        setError(err?.response?.data?.detail || "Email verification failed.");
-      } finally {
-        setLoading(false);
+        const res = await api.get(`/api/verify-email/${token}`);
+        if (!isMounted) return;
+        setStatus("Email verified! Redirecting to set password…");
+        setTimeout(() => nav(`/set-password/${token}`), 800);
+      } catch (e) {
+        setStatus(
+          e.response?.data?.message ||
+            "Verification failed. Your link may be invalid or expired."
+        );
       }
     })();
+    return () => { isMounted = false; };
   }, [token, nav]);
 
-  if (loading) return <p style={{ textAlign: "center", marginTop: "2rem" }}>Verifying…</p>;
-
   return (
-    <div style={{ maxWidth: 420, margin: "2rem auto", textAlign: "center" }}>
-      <h2>Verification Error</h2>
-      <p>{error}</p>
+    <div style={{ maxWidth: 420, margin: "3rem auto" }}>
+      <h2>Verify Email</h2>
+      <p>{status}</p>
     </div>
   );
 }
