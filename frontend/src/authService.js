@@ -19,5 +19,20 @@ export const setPassword = (token, password, confirm) =>
 export const login = (email, password) =>
   api.post("/api/login", { school_email: email.trim(), password });
 
+// Step 3: complete profile — requires user_id and profile data
+export const completeProfile = (userId, profileData) =>
+  api.post(`/api/complete-profile/${userId}`, profileData);
+
+// List view API calls (for design1 users)
+export const getUsersList = (cursor = null, limit = 20) => {
+  const params = new URLSearchParams();
+  if (cursor) params.append('cursor', cursor);
+  params.append('limit', limit);
+  return api.get(`/api/list/users?${params.toString()}`);
+};
+
+export const selectStudyBuddy = (selectedUserId) =>
+  api.post("/api/list/select", { selected_user_id: selectedUserId });
+
 // Optional protected calls
 export const me = () => api.get("/api/me");

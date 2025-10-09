@@ -8,6 +8,8 @@ export default function StudyBuddy() {
   const [password, setPassword] = useState("");
   const [showResend, setShowResend] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
 
   const [showOverlay, setShowOverlay] = useState(true);
   const [overlayLeaving, setOverlayLeaving] = useState(false);
@@ -39,11 +41,20 @@ export default function StudyBuddy() {
 
   function handleSubmit(e) {
     e.preventDefault();
+    
+    // Prevent double submission
+    if (isLoading) return;
+    
+    setIsLoading(true);
+    setSubmitMessage("");
+    
     if (isSignUp) {
       // sign-up: request verification email
       requestVerification(email)
         .then(() => {
-          alert("Check your email for a verification link!");
+          setSubmitMessage("Account created! Check your email for a verification link.");
+          // Clear the form
+          setEmail("");
         })
         .catch((err) => {
           console.error("Signup error:", {
@@ -52,7 +63,11 @@ export default function StudyBuddy() {
             url: err.config?.url,
             baseURL: err.config?.baseURL,
           });
-          alert("Error creating account");
+          const errorMessage = err.response?.data?.detail || "Error creating account. Please try again.";
+          setSubmitMessage(errorMessage);
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
     } else {
       // login
@@ -60,17 +75,25 @@ export default function StudyBuddy() {
         .then((res) => {
           const token = res.data.access_token || res.data.token;
           localStorage.setItem("jwt", token);
-           window.location.replace("/home");
+          setSubmitMessage("Login successful! Redirecting...");
+          setTimeout(() => window.location.replace("/home"), 500);
         })
         .catch((err) => {
           console.error(err);
-          alert("Login failed");
+          const errorMessage = err.response?.data?.detail || "Login failed. Please check your credentials.";
+          setSubmitMessage(errorMessage);
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
     }
   }
 
   useEffect(() => {
     formRef.current?.querySelector("input")?.focus();
+    // Clear messages when switching tabs
+    setSubmitMessage("");
+    setResendMessage("");
   }, [isSignUp]);
 
   const dismissOverlay = () => {
@@ -392,8 +415,20 @@ export default function StudyBuddy() {
               </>
             )}
 
-            <button className="btn" type="submit">
-              {isSignUp ? "Create account" : "Log in"}
+            <button 
+              className="btn" 
+              type="submit" 
+              disabled={isLoading}
+              style={{
+                opacity: isLoading ? 0.7 : 1,
+                cursor: isLoading ? "not-allowed" : "pointer"
+              }}
+            >
+              {isLoading ? (
+                isSignUp ? "Creating account..." : "Logging in..."
+              ) : (
+                isSignUp ? "Create account" : "Log in"
+              )}
             </button>
 
             <div className="switch">
@@ -403,6 +438,21 @@ export default function StudyBuddy() {
               </button>
             </div>
           </form>
+
+          {submitMessage && (
+            <div style={{ 
+              marginTop: "12px", 
+              padding: "12px", 
+              borderRadius: "8px",
+              backgroundColor: submitMessage.includes("successful") || submitMessage.includes("created") ? "rgba(40, 167, 69, 0.2)" : "rgba(220, 53, 69, 0.2)",
+              color: submitMessage.includes("successful") || submitMessage.includes("created") ? "#28a745" : "#dc3545",
+              fontSize: "14px",
+              border: `1px solid ${submitMessage.includes("successful") || submitMessage.includes("created") ? "#28a745" : "#dc3545"}`,
+              textAlign: "center"
+            }}>
+              {submitMessage}
+            </div>
+          )}
 
           <div style={{ marginTop: "16px", textAlign: "center" }}>
             {!showResend ? (
@@ -475,6 +525,9 @@ export default function StudyBuddy() {
             )}
           </div>
         </section>
+
+        <div className="sub">Use Study Buddy to find study partners and project partners in a low-commitment context. Meet once, and if you hit it off, then you've found a study buddy!</div>
+
       </div>
     </div>
   );

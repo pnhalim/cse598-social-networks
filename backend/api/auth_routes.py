@@ -156,9 +156,13 @@ def setup_password(token: str, password_data: PasswordSetup, db: Session = Depen
         user.password_hash = hash_password(password_data.password)
         db.commit()
         
+        # Create access token for automatic login
+        access_token = create_access_token(data={"user_id": user.id})
+        
         return PasswordSetupResponse(
-            message="Password set successfully. You can now complete your profile.",
-            user_id=user.id
+            message="Password set successfully. You are now logged in!",
+            user_id=user.id,
+            access_token=access_token
         )
         
     except ValueError as e:

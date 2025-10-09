@@ -131,6 +131,8 @@ class EmailRequestResponse(BaseModel):
 class PasswordSetupResponse(BaseModel):
     message: str
     user_id: int
+    access_token: str
+    token_type: str = "bearer"
 
 class ProfileSetupResponse(BaseModel):
     message: str
@@ -204,10 +206,17 @@ class CursorPageParams(BaseModel):
 class ListUserSummary(BaseModel):
     id: int
     name: Optional[str] = None
+    school_email: Optional[str] = None
     gender: Optional[str] = None
     major: Optional[str] = None
     academic_year: Optional[str] = None
     profile_picture: Optional[str] = None
+    classes_taking: Optional[List[str]] = None
+    learn_best_when: Optional[str] = None
+    study_snack: Optional[str] = None
+    favorite_study_spot: Optional[str] = None
+    mbti: Optional[str] = None
+    yap_to_study_ratio: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { me } from "./authService";
+import UserList from "./UserList";
+import ProfileButton from "./ProfileButton";
 
 export default function Home() {
   const nav = useNavigate();
@@ -16,6 +18,12 @@ export default function Home() {
         if (!mounted) return;
         setUser(res.data);
         setMsg("");
+        
+        // Check if profile is completed, redirect if not
+        if (!res.data.profile_completed) {
+          nav(`/complete-profile/${res.data.id}`, { replace: true });
+          return;
+        }
       } catch (e) {
         // token missing/invalid
         localStorage.removeItem("jwt");
@@ -27,11 +35,20 @@ export default function Home() {
 
   if (msg) return <p style={{ maxWidth: 480, margin: "2rem auto" }}>{msg}</p>;
 
+  // Show UserList for design1 users, otherwise show basic home page
+  if (user?.frontend_design === "design1") {
+    return <UserList />;
+  }
+
   return (
-    <div style={{ maxWidth: 720, margin: "2rem auto", color: "#eaeff5" }}>
+    <div style={{ maxWidth: 720, margin: "2rem auto", color: "#eaeff5", position: "relative" }}>
+      <ProfileButton />
+      
       <h1>Welcome{user?.name ? `, ${user.name}` : ""} 👋</h1>
       <p>Your email: {user?.school_email || user?.email}</p>
-      <p>Status: {user?.is_verified ? "Verified" : "Unverified"}</p>
+      <p>Status: {user?.email_verified ? "Verified" : "Unverified"}</p>
+      <p>Profile: {user?.profile_completed ? "Completed" : "Incomplete"}</p>
+      <p>Design: {user?.frontend_design || "Not assigned"}</p>
       <button
         onClick={() => { localStorage.removeItem("jwt"); nav("/", { replace: true }); }}
         style={{ marginTop: 12 }}

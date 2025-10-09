@@ -13,18 +13,43 @@ from core.database import SessionLocal, engine
 from models.models import User, Base
 from services.auth_utils import hash_password
 import random
+import string
 
 # Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
 
+def generate_random_email():
+    """Generate a random email address for testing"""
+    # Common first names and last names for variety
+    first_names = [
+        "alex", "sam", "jordan", "taylor", "casey", "riley", "morgan", "jamie",
+        "chris", "drew", "blake", "sage", "quinn", "finley", "avery", "cameron",
+        "dana", "emery", "hayden", "kendall", "parker", "reese", "skyler", "tyler"
+    ]
+    
+    last_names = [
+        "smith", "johnson", "williams", "brown", "jones", "garcia", "miller",
+        "davis", "rodriguez", "martinez", "hernandez", "lopez", "gonzalez",
+        "wilson", "anderson", "thomas", "taylor", "moore", "jackson", "martin",
+        "lee", "perez", "thompson", "white", "harris", "sanchez", "clark",
+        "ramirez", "lewis", "robinson", "walker", "young", "allen", "king"
+    ]
+    
+    first_name = random.choice(first_names)
+    last_name = random.choice(last_names)
+    
+    # Add random numbers to make emails more unique
+    random_suffix = random.randint(100, 9999)
+    
+    return f"{first_name}.{last_name}{random_suffix}@umich.edu"
+
 def create_test_users():
     """Create test users for testing mutual matching"""
     
-    # Sample data for test users
+    # Sample data for test users (without email addresses - will be generated)
     test_users_data = [
         {
             "name": "Alice Johnson",
-            "school_email": "alice@umich.edu",
             "gender": "Female",
             "major": "Computer Science",
             "academic_year": "Junior",
@@ -37,7 +62,6 @@ def create_test_users():
         },
         {
             "name": "Bob Smith",
-            "school_email": "bob@umich.edu",
             "gender": "Male",
             "major": "Engineering",
             "academic_year": "Graduate",
@@ -50,7 +74,6 @@ def create_test_users():
         },
         {
             "name": "Carol Davis",
-            "school_email": "carol@umich.edu",
             "gender": "Female",
             "major": "Data Science",
             "academic_year": "Sophomore",
@@ -63,7 +86,6 @@ def create_test_users():
         },
         {
             "name": "David Wilson",
-            "school_email": "david@umich.edu",
             "gender": "Male",
             "major": "Business",
             "academic_year": "Junior",
@@ -76,7 +98,6 @@ def create_test_users():
         },
         {
             "name": "Emma Brown",
-            "school_email": "emma@umich.edu",
             "gender": "Female",
             "major": "Psychology",
             "academic_year": "Senior",
@@ -89,7 +110,6 @@ def create_test_users():
         },
         {
             "name": "Frank Miller",
-            "school_email": "frank@umich.edu",
             "gender": "Male",
             "major": "Engineering",
             "academic_year": "Graduate",
@@ -102,7 +122,6 @@ def create_test_users():
         },
         {
             "name": "Grace Lee",
-            "school_email": "grace@umich.edu",
             "gender": "Female",
             "major": "Biology",
             "academic_year": "Sophomore",
@@ -115,7 +134,6 @@ def create_test_users():
         },
         {
             "name": "Henry Taylor",
-            "school_email": "henry@umich.edu",
             "gender": "Male",
             "major": "Economics",
             "academic_year": "Junior",
@@ -128,7 +146,6 @@ def create_test_users():
         },
         {
             "name": "Ivy Chen",
-            "school_email": "ivy@umich.edu",
             "gender": "Female",
             "major": "Art History",
             "academic_year": "Senior",
@@ -141,7 +158,6 @@ def create_test_users():
         },
         {
             "name": "Jack Anderson",
-            "school_email": "jack@umich.edu",
             "gender": "Male",
             "major": "Engineering",
             "academic_year": "Senior",
@@ -161,14 +177,27 @@ def create_test_users():
         existing_emails = {user.school_email for user in db.query(User).all()}
         
         created_count = 0
+        design1_count = 0
+        design2_count = 0
+        
         for user_data in test_users_data:
-            if user_data["school_email"] in existing_emails:
-                print(f"User {user_data['school_email']} already exists, skipping...")
-                continue
+            # Generate a unique random email
+            while True:
+                random_email = generate_random_email()
+                if random_email not in existing_emails:
+                    break
+            
+            # Assign design - alternate between design1 and design2 for better distribution
+            if created_count % 2 == 0:
+                assigned_design = "design1"
+                design1_count += 1
+            else:
+                assigned_design = "design2"
+                design2_count += 1
             
             # Create user
             user = User(
-                school_email=user_data["school_email"],
+                school_email=random_email,
                 password_hash=hash_password("testpassword123"),  # Default password for all test users
                 name=user_data["name"],
                 gender=user_data["gender"],
@@ -182,22 +211,24 @@ def create_test_users():
                 yap_to_study_ratio=user_data["yap_to_study_ratio"],
                 email_verified=True,
                 profile_completed=True,
-                frontend_design=random.choice(["design1", "design2"])  # Randomly assign design
+                frontend_design=assigned_design
             )
             
             db.add(user)
             created_count += 1
-            print(f"Created user: {user_data['name']} ({user_data['school_email']}) - Design: {user.frontend_design}")
+            existing_emails.add(random_email)  # Add to existing emails to avoid duplicates
+            print(f"Created user: {user_data['name']} ({random_email}) - Design: {assigned_design}")
         
         db.commit()
         print(f"\nSuccessfully created {created_count} test users!")
+        print(f"Design1 users: {design1_count}")
+        print(f"Design2 users: {design2_count}")
         print("\nTest user credentials:")
-        print("Email: [user_email]@umich.edu")
         print("Password: testpassword123")
-        print("\nDesign2 users (for mutual matching):")
-        design2_users = db.query(User).filter(User.frontend_design == "design2").all()
-        for user in design2_users:
-            print(f"- {user.name} ({user.school_email})")
+        print("\nAll created users:")
+        all_users = db.query(User).filter(User.school_email.like("%@umich.edu")).all()
+        for user in all_users:
+            print(f"- {user.name} ({user.school_email}) - Design: {user.frontend_design}")
         
     except Exception as e:
         print(f"Error creating test users: {e}")
@@ -206,6 +237,6 @@ def create_test_users():
         db.close()
 
 if __name__ == "__main__":
-    print("Creating test users for mutual matching...")
+    print("Creating test users with random emails and design assignments...")
     create_test_users()
     print("\nDone! You can now test the mutual matching endpoints in Swagger.")

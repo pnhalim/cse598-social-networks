@@ -81,10 +81,17 @@ def list_users(
         ListUserSummary(
             id=u.id,
             name=u.name,
+            school_email=u.school_email,
             gender=u.gender,
             major=u.major,
             academic_year=u.academic_year,
             profile_picture=u.profile_picture,
+            classes_taking=u.classes_taking,
+            learn_best_when=u.learn_best_when,
+            study_snack=u.study_snack,
+            favorite_study_spot=u.favorite_study_spot,
+            mbti=u.mbti,
+            yap_to_study_ratio=u.yap_to_study_ratio,
         )
         for u in items[:limit]
     ]
