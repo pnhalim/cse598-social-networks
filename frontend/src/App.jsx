@@ -11,7 +11,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/verify-email/:code" element={<VerifyEmail />} />
         <Route path="/set-password/:token" element={<SetPassword />} />
         <Route
            path="/home"

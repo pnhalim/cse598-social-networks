@@ -7,7 +7,7 @@ from models.schemas import (
     ProfileSetup, ProfileSetupResponse, LoginRequest, LoginResponse
 )
 from services.utils import assign_frontend_design
-from services.email_service import send_verification_email, verify_token
+from services.email_service import send_verification_email, verify_token, get_verification_code_data, create_verification_token
 from services.auth_utils import hash_password, verify_password, create_access_token
 
 # Create router for authentication routes
@@ -46,6 +46,7 @@ async def request_email_verification(email_request: EmailRequest, request: Reque
             user_major="",  # Placeholder
             user_academic_year="",  # Placeholder
             user_id=db_user.id,
+            db=db,
             base_url=base_url
         )
         
@@ -268,7 +269,59 @@ def login_for_access_token(
             detail="Internal server error during authentication"
         )
 
-# Email verification endpoints
+# Exchange verification code for JWT token
+@router.post("/verify-code/{code}")
+def exchange_verification_code(code: str, db: Session = Depends(get_db)):
+    """Exchange verification code for JWT token"""
+    try:
+        # Get code data (this marks the code as used - one-time use)
+        code_data = get_verification_code_data(db, code)
+        if not code_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired verification code"
+            )
+        
+        user_id = code_data["user_id"]
+        action = code_data["action"]
+        
+        if action != "verify":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid code action"
+            )
+        
+        # Get user
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Mark as verified
+        user.email_verified = True
+        db.commit()
+        db.refresh(user)
+        
+        # Create JWT token for the user
+        jwt_token = create_verification_token(user_id, "verify")
+        
+        return {
+            "message": "Email verified successfully! Please set your password to continue.",
+            "user": user,
+            "token": jwt_token
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to verify code"
+        )
+
+# Email verification endpoints (legacy - keeping for backward compatibility)
 @router.get("/verify-email/{token}")
 def verify_email_token(token: str, db: Session = Depends(get_db)):
     """Verify user's email using token from email"""
