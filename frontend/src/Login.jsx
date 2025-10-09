@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import collageUrl from "./assets/collage.jpg";
-import { login, requestVerification } from "./authService";
+import { login, requestVerification, resendVerification } from "./authService";
 
 export default function StudyBuddy() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showResend, setShowResend] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
 
   const [showOverlay, setShowOverlay] = useState(true);
   const [overlayLeaving, setOverlayLeaving] = useState(false);
@@ -17,6 +19,23 @@ export default function StudyBuddy() {
   const draggingRef = useRef(false);
 
   const formRef = useRef(null);
+
+  function handleResendVerification() {
+    if (!email) {
+      setResendMessage("Please enter your email address first.");
+      return;
+    }
+    
+    resendVerification(email)
+      .then(() => {
+        setResendMessage("New verification email sent! Please check your inbox.");
+        setShowResend(false);
+      })
+      .catch((err) => {
+        const message = err.response?.data?.detail || "Failed to resend verification email.";
+        setResendMessage(message);
+      });
+  }
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -378,12 +397,83 @@ export default function StudyBuddy() {
             </button>
 
             <div className="switch">
-              {isSignUp ? "Already have an account?" : "Don’t have an account?"}
+              {isSignUp ? "Already have an account?" : "Don't have an account?"}
               <button type="button" className="link" onClick={() => setIsSignUp(!isSignUp)}>
                 {isSignUp ? "Log in" : "Sign up"}
               </button>
             </div>
           </form>
+
+          <div style={{ marginTop: "16px", textAlign: "center" }}>
+            {!showResend ? (
+              <button 
+                type="button" 
+                className="link" 
+                onClick={() => setShowResend(true)}
+                style={{ 
+                  color: "#FFCB05", 
+                  background: "none", 
+                  border: "none", 
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  textDecoration: "underline"
+                }}
+              >
+                {isSignUp ? "Didn't receive verification email?" : "Didn't receive verification email?"}
+              </button>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <button 
+                  type="button" 
+                  className="btn" 
+                  onClick={handleResendVerification}
+                  style={{ 
+                    background: "#FFCB05", 
+                    color: "#111", 
+                    border: "none", 
+                    padding: "8px 16px",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "600"
+                  }}
+                >
+                  Resend Verification Email
+                </button>
+                <button 
+                  type="button" 
+                  className="link" 
+                  onClick={() => {
+                    setShowResend(false);
+                    setResendMessage("");
+                  }}
+                  style={{ 
+                    color: "#C8D3DE", 
+                    background: "none", 
+                    border: "none", 
+                    cursor: "pointer",
+                    fontSize: "12px"
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+            
+            {resendMessage && (
+              <div style={{ 
+                marginTop: "8px", 
+                padding: "8px", 
+                borderRadius: "6px",
+                backgroundColor: resendMessage.includes("sent") ? "rgba(40, 167, 69, 0.2)" : "rgba(220, 53, 69, 0.2)",
+                color: resendMessage.includes("sent") ? "#28a745" : "#dc3545",
+                fontSize: "12px",
+                border: `1px solid ${resendMessage.includes("sent") ? "#28a745" : "#dc3545"}`
+              }}>
+                {resendMessage}
+              </div>
+            )}
+          </div>
         </section>
       </div>
     </div>

@@ -4,6 +4,10 @@ import api from "./api";
 export const requestVerification = (email) =>
   api.post("/api/request-verification", { school_email: email.trim() });
 
+// Resend verification email for existing unverified users
+export const resendVerification = (email) =>
+  api.post("/api/resend-verification", { school_email: email.trim() });
+
 // Step 2: set password — token is a PATH param, body must include confirm_password
 export const setPassword = (token, password, confirm) =>
   api.post(`/api/setup-password/${token}`, {

@@ -64,6 +64,58 @@ async def request_email_verification(email_request: EmailRequest, request: Reque
             detail="Failed to send verification email. Please try again."
         )
 
+# Resend verification email for unverified users
+@router.post("/resend-verification", response_model=EmailRequestResponse, status_code=status.HTTP_200_OK)
+async def resend_verification_email(email_request: EmailRequest, request: Request, db: Session = Depends(get_db)):
+    """Resend verification email for unverified users"""
+    
+    # Check if user exists
+    existing_user = db.query(User).filter(User.school_email == email_request.school_email).first()
+    if not existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account found with this email address"
+        )
+    
+    # Check if email is already verified
+    if existing_user.email_verified is True:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is already verified"
+        )
+    
+    # Check if user has a password (means they completed the flow)
+    if existing_user.password_hash is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account setup is already complete"
+        )
+    
+    # Send new verification email
+    try:
+        # Get base URL from request
+        base_url = f"{request.url.scheme}://{request.url.netloc}"
+        await send_verification_email(
+            user_email=existing_user.school_email,
+            user_name="User",  # Placeholder name since we don't have it yet
+            user_major="",  # Placeholder
+            user_academic_year="",  # Placeholder
+            user_id=existing_user.id,
+            db=db,
+            base_url=base_url
+        )
+        
+        return EmailRequestResponse(
+            message="New verification email sent successfully. Please check your email to continue.",
+            email_sent=True
+        )
+    except Exception as e:
+        print(f"Failed to resend verification email: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send verification email. Please try again."
+        )
+
 # Step 2: Setup password after email verification
 @router.post("/setup-password/{token}", response_model=PasswordSetupResponse, status_code=status.HTTP_200_OK)
 def setup_password(token: str, password_data: PasswordSetup, db: Session = Depends(get_db)):
