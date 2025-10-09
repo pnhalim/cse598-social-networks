@@ -41,7 +41,7 @@ export default function StudyBuddy() {
         .then((res) => {
           const token = res.data.access_token || res.data.token;
           localStorage.setItem("jwt", token);
-          alert("Logged in!");
+           window.location.replace("/home");
         })
         .catch((err) => {
           console.error(err);

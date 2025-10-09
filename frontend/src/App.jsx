@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./Login.jsx";
 import SetPassword from "./SetPassword.jsx";
 import VerifyEmail from "./VerifyEmail.jsx";
+import Home from "./Home.jsx";
+import ProtectedRoute from "./ProtectedRoute.jsx";
 
 export default function App() {
   return (
@@ -11,6 +13,14 @@ export default function App() {
         <Route path="/" element={<Login />} />
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/set-password/:token" element={<SetPassword />} />
+        <Route
+           path="/home"
+           element={
+             <ProtectedRoute>
+               <Home />
+             </ProtectedRoute>
+           }
+         />
       </Routes>
     </BrowserRouter>
   );
