@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { me } from "./authService";
 import collageUrl from "./assets/collage.jpg";
+import { validateTextInput } from "./censorshipUtils";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [message, setMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     const loadUser = async () => {
@@ -40,6 +42,25 @@ export default function Profile() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Check for inappropriate content
+    const error = validateTextInput(value, name === 'name' ? 'Name' : 
+                                    name === 'major' ? 'Major' :
+                                    name === 'learn_best_when' ? 'Learn best when' :
+                                    name === 'study_snack' ? 'Study snack' :
+                                    name === 'favorite_study_spot' ? 'Favorite study spot' :
+                                    name === 'mbti' ? 'MBTI' : 'This field');
+    
+    if (error) {
+      setFieldErrors(prev => ({ ...prev, [name]: error }));
+    } else {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    
     setEditData(prev => ({
       ...prev,
       [name]: value
@@ -47,6 +68,13 @@ export default function Profile() {
   };
 
   const handleSave = async () => {
+    // Check for field errors
+    if (Object.keys(fieldErrors).length > 0) {
+      setMessage("Please fix the errors in the form before saving.");
+      setTimeout(() => setMessage(""), 3000);
+      return;
+    }
+    
     try {
       // TODO: Implement profile update API call
       setMessage("Profile updated successfully!");
@@ -593,6 +621,11 @@ export default function Profile() {
             ) : (
               <div className="field-value">{user?.name || <span className="not-provided">Not provided</span>}</div>
             )}
+            {fieldErrors.name && (
+              <div style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '4px' }}>
+                {fieldErrors.name}
+              </div>
+            )}
           </div>
 
           <div className="field">
@@ -627,6 +660,11 @@ export default function Profile() {
               />
             ) : (
               <div className="field-value">{user?.major || 'Not provided'}</div>
+            )}
+            {fieldErrors.major && (
+              <div style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '4px' }}>
+                {fieldErrors.major}
+              </div>
             )}
           </div>
 
@@ -668,6 +706,11 @@ export default function Profile() {
             ) : (
               <div className="field-value">{user?.learn_best_when || 'Not provided'}</div>
             )}
+            {fieldErrors.learn_best_when && (
+              <div style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '4px' }}>
+                {fieldErrors.learn_best_when}
+              </div>
+            )}
           </div>
 
           <div className="field">
@@ -682,6 +725,11 @@ export default function Profile() {
               />
             ) : (
               <div className="field-value">{user?.study_snack || 'Not provided'}</div>
+            )}
+            {fieldErrors.study_snack && (
+              <div style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '4px' }}>
+                {fieldErrors.study_snack}
+              </div>
             )}
           </div>
 
@@ -698,6 +746,11 @@ export default function Profile() {
             ) : (
               <div className="field-value">{user?.favorite_study_spot || 'Not provided'}</div>
             )}
+            {fieldErrors.favorite_study_spot && (
+              <div style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '4px' }}>
+                {fieldErrors.favorite_study_spot}
+              </div>
+            )}
           </div>
 
           <div className="field">
@@ -712,6 +765,11 @@ export default function Profile() {
               />
             ) : (
               <div className="field-value">{user?.mbti || 'Not provided'}</div>
+            )}
+            {fieldErrors.mbti && (
+              <div style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '4px' }}>
+                {fieldErrors.mbti}
+              </div>
             )}
           </div>
 

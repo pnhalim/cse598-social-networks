@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import collageUrl from "./assets/collage.jpg";
 import api from "./api";
+import { validateTextInput } from "./censorshipUtils";
 
 export default function CompleteProfile() {
   const { user_id } = useParams();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   
   // Form state
   const [formData, setFormData] = useState({
@@ -31,6 +33,25 @@ export default function CompleteProfile() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Check for inappropriate content
+    const error = validateTextInput(value, name === 'name' ? 'Name' : 
+                                    name === 'major' ? 'Major' :
+                                    name === 'learn_best_when' ? 'Learn best when' :
+                                    name === 'study_snack' ? 'Study snack' :
+                                    name === 'favorite_study_spot' ? 'Favorite study spot' :
+                                    name === 'mbti' ? 'MBTI' : 'This field');
+    
+    if (error) {
+      setFieldErrors(prev => ({ ...prev, [name]: error }));
+    } else {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -48,6 +69,14 @@ export default function CompleteProfile() {
   const addClass = (type) => {
     const classValue = type === 'taking' ? currentClass : currentPastClass;
     if (!classValue.trim()) return;
+    
+    // Check for inappropriate content in class name
+    const error = validateTextInput(classValue, 'Class name');
+    if (error) {
+      setSubmitMessage(error);
+      setTimeout(() => setSubmitMessage(""), 3000);
+      return;
+    }
     
     const capitalizedClass = capitalizeClassName(classValue);
     
@@ -78,6 +107,12 @@ export default function CompleteProfile() {
     e.preventDefault();
     
     if (isLoading) return;
+    
+    // Check for field errors
+    if (Object.keys(fieldErrors).length > 0) {
+      setSubmitMessage("Please fix the errors in the form before submitting.");
+      return;
+    }
     
     // Basic validation
     if (!formData.name || !formData.gender || !formData.major || !formData.academic_year) {
@@ -324,6 +359,11 @@ export default function CompleteProfile() {
                 onChange={handleInputChange}
                 required
               />
+              {fieldErrors.name && (
+                <div style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '4px' }}>
+                  {fieldErrors.name}
+                </div>
+              )}
             </div>
 
             <div className="form-row">
@@ -377,6 +417,11 @@ export default function CompleteProfile() {
                 onChange={handleInputChange}
                 required
               />
+              {fieldErrors.major && (
+                <div style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '4px' }}>
+                  {fieldErrors.major}
+                </div>
+              )}
             </div>
 
             <div className="section-title">Academic Information</div>
@@ -468,6 +513,11 @@ export default function CompleteProfile() {
                 value={formData.learn_best_when}
                 onChange={handleInputChange}
               />
+              {fieldErrors.learn_best_when && (
+                <div style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '4px' }}>
+                  {fieldErrors.learn_best_when}
+                </div>
+              )}
             </div>
 
             <div>
@@ -481,6 +531,11 @@ export default function CompleteProfile() {
                 value={formData.study_snack}
                 onChange={handleInputChange}
               />
+              {fieldErrors.study_snack && (
+                <div style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '4px' }}>
+                  {fieldErrors.study_snack}
+                </div>
+              )}
             </div>
 
             <div>
@@ -494,6 +549,11 @@ export default function CompleteProfile() {
                 value={formData.favorite_study_spot}
                 onChange={handleInputChange}
               />
+              {fieldErrors.favorite_study_spot && (
+                <div style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '4px' }}>
+                  {fieldErrors.favorite_study_spot}
+                </div>
+              )}
             </div>
 
             <div className="form-row">
@@ -508,6 +568,11 @@ export default function CompleteProfile() {
                   value={formData.mbti}
                   onChange={handleInputChange}
                 />
+                {fieldErrors.mbti && (
+                  <div style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '4px' }}>
+                    {fieldErrors.mbti}
+                  </div>
+                )}
               </div>
               
               <div>

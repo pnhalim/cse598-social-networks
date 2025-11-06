@@ -37,3 +37,4 @@ watchfiles==1.1.0
 websockets==15.0.1
 cloudinary==1.41.0
 Pillow==10.1.0
+better-profanity==0.7.0

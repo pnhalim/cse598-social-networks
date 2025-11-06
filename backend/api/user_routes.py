@@ -13,6 +13,7 @@ from models.schemas import (
 from services.utils import assign_frontend_design
 from services.image_service import image_service
 from services.email_service import send_reach_out_email
+from services.censorship_service import validate_text_input
 from config.auth_dependencies import get_current_user, get_current_active_user
 
 # Create router for user management routes
@@ -57,6 +58,39 @@ def update_user(user_update: UserUpdate, current_user: User = Depends(get_curren
     """Update the authenticated user's profile"""
     # Update fields that are provided
     update_data = user_update.dict(exclude_unset=True)
+    
+    # Validate text fields for inappropriate content
+    text_fields = ['name', 'major', 'learn_best_when', 'study_snack', 'favorite_study_spot', 'mbti']
+    for field_name in text_fields:
+        if field_name in update_data and update_data[field_name]:
+            is_valid, error_msg = validate_text_input(update_data[field_name], field_name.replace('_', ' ').title())
+            if not is_valid:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error_msg
+                )
+    
+    # Validate class names if provided
+    if 'classes_taking' in update_data and update_data['classes_taking']:
+        for class_name in update_data['classes_taking']:
+            if class_name:
+                is_valid, error_msg = validate_text_input(class_name, 'Class name')
+                if not is_valid:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=error_msg
+                    )
+    
+    if 'classes_taken' in update_data and update_data['classes_taken']:
+        for class_name in update_data['classes_taken']:
+            if class_name:
+                is_valid, error_msg = validate_text_input(class_name, 'Class name')
+                if not is_valid:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=error_msg
+                    )
+    
     for field, value in update_data.items():
         setattr(current_user, field, value)
     
@@ -258,6 +292,15 @@ async def send_reach_out(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"You have reached your daily limit of {DAILY_REACH_OUT_LIMIT} reach outs. Please try again tomorrow."
         )
+    
+    # Validate personal message for inappropriate content
+    if reach_out_request.personal_message:
+        is_valid, error_msg = validate_text_input(reach_out_request.personal_message, 'Message')
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_msg
+            )
     
     try:
         # Send the email

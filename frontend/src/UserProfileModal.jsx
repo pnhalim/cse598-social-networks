@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import collageUrl from "./assets/collage.jpg";
 import { reachOut, me, reportUser, getReachOutStatus } from "./authService";
+import { validateTextInput } from "./censorshipUtils";
 
 export default function UserProfileModal({ user, isOpen, onClose }) {
   const [showEmailPopup, setShowEmailPopup] = useState(false);
@@ -14,6 +15,7 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
   const [isReporting, setIsReporting] = useState(false);
   const [reportStatus, setReportStatus] = useState(null);
   const [reachOutStatus, setReachOutStatus] = useState(null);
+  const [messageError, setMessageError] = useState("");
 
   // Load current user and reach out status when modal opens
   useEffect(() => {
@@ -53,6 +55,13 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
   const handleSendEmail = async () => {
     if (!currentUser) {
       setErrorMessage("Unable to load your profile. Please try again.");
+      return;
+    }
+
+    // Check for inappropriate content before sending
+    if (messageError) {
+      setSendStatus('error');
+      setErrorMessage(messageError);
       return;
     }
 
@@ -943,9 +952,21 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
               className="email-draft-textarea"
               placeholder="Hey! I'd love to study together. Let me know when you're free! 😊"
               value={personalMessage}
-              onChange={(e) => setPersonalMessage(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setPersonalMessage(value);
+                
+                // Check for inappropriate content
+                const error = validateTextInput(value, 'Message');
+                setMessageError(error || "");
+              }}
               disabled={isSending}
             />
+            {messageError && (
+              <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', marginBottom: '8px' }}>
+                {messageError}
+              </div>
+            )}
             
             {sendStatus === 'success' && (
               <div className="status-message success">

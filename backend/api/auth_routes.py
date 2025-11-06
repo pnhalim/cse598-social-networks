@@ -9,6 +9,7 @@ from models.schemas import (
 from services.utils import assign_frontend_design
 from services.email_service import send_verification_email, verify_token, get_verification_code_data, create_verification_token
 from services.auth_utils import hash_password, verify_password, create_access_token
+from services.censorship_service import validate_text_input
 
 # Create router for authentication routes
 router = APIRouter(prefix="/api", tags=["authentication"])
@@ -200,6 +201,46 @@ def complete_profile(user_id: int, profile_data: ProfileSetup, db: Session = Dep
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Profile already completed"
         )
+    
+    # Validate text fields for inappropriate content
+    text_fields = {
+        'name': profile_data.name,
+        'major': profile_data.major,
+        'learn_best_when': profile_data.learn_best_when,
+        'study_snack': profile_data.study_snack,
+        'favorite_study_spot': profile_data.favorite_study_spot,
+        'mbti': profile_data.mbti
+    }
+    
+    for field_name, field_value in text_fields.items():
+        if field_value:
+            is_valid, error_msg = validate_text_input(field_value, field_name.replace('_', ' ').title())
+            if not is_valid:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error_msg
+                )
+    
+    # Validate class names
+    if profile_data.classes_taking:
+        for class_name in profile_data.classes_taking:
+            if class_name:
+                is_valid, error_msg = validate_text_input(class_name, 'Class name')
+                if not is_valid:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=error_msg
+                    )
+    
+    if profile_data.classes_taken:
+        for class_name in profile_data.classes_taken:
+            if class_name:
+                is_valid, error_msg = validate_text_input(class_name, 'Class name')
+                if not is_valid:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=error_msg
+                    )
     
     # Update user with profile data
     user.name = profile_data.name
