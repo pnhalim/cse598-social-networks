@@ -768,7 +768,19 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
                 {user.name ? user.name.charAt(0).toUpperCase() : '?'}
               </div>
               <div className="modal-user-info">
-                <h2>{user.name || 'Anonymous'}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <h2 style={{ margin: 0 }}>{user.name || 'Anonymous'}</h2>
+                  {user.match_score !== null && user.match_score !== undefined && (
+                    <div className="info-capsule" style={{ 
+                      background: 'linear-gradient(135deg, rgba(76,175,80,.3), rgba(76,175,80,.2))', 
+                      borderColor: 'rgba(76,175,80,.4)',
+                      color: '#4caf50'
+                    }}>
+                      <span className="info-icon">💯</span>
+                      <span style={{ fontWeight: 800 }}>{(user.match_score * 100).toFixed(0)}% Match</span>
+                    </div>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '8px' }}>
                   {user.trusted_badge_this_week && (
                     <div className="info-capsule" style={{ background: 'rgba(255, 203, 5, 0.2)', borderColor: 'var(--maize)' }}>

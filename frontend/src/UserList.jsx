@@ -61,12 +61,20 @@ const overlapScore = (mineSet, theirsArr) => {
   return score;
 };
 
-// Sort by overlap desc, then fall back to name
+// Sort by match_score desc (from backend), then overlap desc, then fall back to name
 const sortByOverlap = (list, mineSet) =>
   [...list].sort((a, b) => {
+    // First, sort by match_score (descending) - highest match score first
+    const matchA = a.match_score !== null && a.match_score !== undefined ? a.match_score : -1;
+    const matchB = b.match_score !== null && b.match_score !== undefined ? b.match_score : -1;
+    if (matchB !== matchA) return matchB - matchA; // Descending order
+    
+    // Then by class overlap (descending)
     const sa = overlapScore(mineSet, a.classes_taking);
     const sb = overlapScore(mineSet, b.classes_taking);
     if (sb !== sa) return sb - sa;
+    
+    // Finally by name (ascending)
     return String(a.name || "").localeCompare(String(b.name || ""));
   });
 
@@ -196,7 +204,8 @@ const sortByOverlap = (list, mineSet) =>
 
   useEffect(() => {
     const mineSet = toSet(myClasses);
-    // Start from the current filtered view (users), but if you prefer from allUsers, swap to allUsers
+    // Sort by match_score (descending) from backend, then by class overlap
+    // The backend already sorts by match_score, but we maintain that order here
     setUsers(prev => sortByOverlap(prev, mineSet));
   }, [allUsers, myClasses]);
 
@@ -445,11 +454,46 @@ const sortByOverlap = (list, mineSet) =>
           flex: 1;
         }
 
+        .user-name-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 5px;
+        }
+
         .user-name {
           font-size: 18px;
           font-weight: 800;
           color: var(--fg);
-          margin: 0 0 5px 0;
+          margin: 0;
+          flex: 1;
+        }
+
+        .match-score-badge {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 6px 10px;
+          border-radius: 12px;
+          background: linear-gradient(135deg, rgba(76,175,80,.3), rgba(76,175,80,.2));
+          color: #4caf50;
+          border: 1px solid rgba(76,175,80,.4);
+          font-size: 12px;
+          font-weight: 800;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .match-score-icon {
+          font-size: 14px;
+          line-height: 1;
+        }
+
+        .match-score-text {
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.3px;
         }
 
         .user-badges {
@@ -906,7 +950,15 @@ const sortByOverlap = (list, mineSet) =>
                     {user.name ? user.name.charAt(0).toUpperCase() : '?'}
                   </div>
                   <div className="user-info">
-                    <h3 className="user-name">{user.name || 'Anonymous'}</h3>
+                    <div className="user-name-row">
+                      <h3 className="user-name">{user.name || 'Anonymous'}</h3>
+                      {user.match_score !== null && user.match_score !== undefined && (
+                        <div className="match-score-badge" title={`Match Score: ${(user.match_score * 100).toFixed(1)}%`}>
+                          <span className="match-score-icon">💯</span>
+                          <span className="match-score-text">{(user.match_score * 100).toFixed(0)}%</span>
+                        </div>
+                      )}
+                    </div>
                     <div className="user-badges">
                       {user.major && (
                         <div className="profile-badge major-badge" title={`Major: ${user.major}`}>

@@ -197,6 +197,7 @@ class MutualMatchResponse(BaseModel):
     mbti: Optional[str] = None
     yap_to_study_ratio: Optional[str] = None
     matched_at: datetime
+    match_score: Optional[float] = None  # Similarity score between 0.0 and 1.0
 
 class MutualMatchesResponse(BaseModel):
     matches: List[MutualMatchResponse]
@@ -222,6 +223,7 @@ class ListUserSummary(BaseModel):
     yap_to_study_ratio: Optional[str] = None
     average_rating: Optional[float] = None
     reputation_score: Optional[int] = None
+    match_score: Optional[float] = None  # Similarity score between 0.0 and 1.0
 
     class Config:
         from_attributes = True

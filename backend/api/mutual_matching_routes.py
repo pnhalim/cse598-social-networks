@@ -9,6 +9,7 @@ from models.schemas import (
     ApprovalRequest, ApprovalResponse, MutualMatchResponse, MutualMatchesResponse, MessageResponse
 )
 from config.auth_dependencies import get_current_user
+from utils.similarity import sort_users_by_similarity, calculate_similarity_score
 
 # Create router for mutual matching routes
 router = APIRouter(prefix="/api", tags=["mutual matching"])
@@ -136,6 +137,9 @@ def get_mutual_matches(
             )
         ).order_by(UserApproval.created_at.desc()).first()
         
+        # Calculate similarity score
+        similarity_score = calculate_similarity_score(current_user, user)
+        
         match_response = MutualMatchResponse(
             id=user.id,
             name=user.name or "Unknown",
@@ -150,7 +154,8 @@ def get_mutual_matches(
             favorite_study_spot=user.favorite_study_spot,
             mbti=user.mbti,
             yap_to_study_ratio=user.yap_to_study_ratio,
-            matched_at=latest_approval.created_at if latest_approval else user.created_at
+            matched_at=latest_approval.created_at if latest_approval else user.created_at,
+            match_score=round(similarity_score, 3)  # Round to 3 decimal places
         )
         matches_response.append(match_response)
     
@@ -187,9 +192,12 @@ def get_potential_matches(
         )
     ).all()
     
+    # Sort by similarity score (most similar first)
+    sorted_matches = sort_users_by_similarity(current_user, potential_matches)
+    
     # Convert to response format
     matches_response = []
-    for user in potential_matches:
+    for user, similarity_score in sorted_matches:
         match_response = MutualMatchResponse(
             id=user.id,
             name=user.name or "Unknown",
@@ -204,7 +212,8 @@ def get_potential_matches(
             favorite_study_spot=user.favorite_study_spot,
             mbti=user.mbti,
             yap_to_study_ratio=user.yap_to_study_ratio,
-            matched_at=user.created_at  # Use user creation date as fallback
+            matched_at=user.created_at,  # Use user creation date as fallback
+            match_score=round(similarity_score, 3)  # Round to 3 decimal places
         )
         matches_response.append(match_response)
     

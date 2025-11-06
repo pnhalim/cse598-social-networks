@@ -11,6 +11,7 @@ from models.schemas import (
     SelectBuddyResponse,
 )
 from config.auth_dependencies import get_current_user
+from utils.similarity import sort_users_by_similarity
 
 router = APIRouter(prefix="/api", tags=["list view"]) 
 
@@ -61,6 +62,7 @@ def list_users(
 ):
     """
     List users that match the current user's preferences using cursor pagination.
+    Results are ordered by similarity to the current user (most similar first).
     Only available for users with frontend_design == 'design1'.
     """
     if current_user.frontend_design != "design1":
@@ -69,16 +71,45 @@ def list_users(
             detail="This feature is only available for users on the list view design",
         )
 
-    base_q = _apply_user_preferences_query(db, current_user).order_by(User.id.asc())
-
-    if params.cursor is not None:
-        base_q = base_q.filter(User.id > params.cursor)
-
+    # Get all matching users (with a reasonable limit to avoid performance issues)
+    # We fetch up to 1000 users, sort by similarity, then paginate
+    MAX_FETCH = 1000
+    base_q = _apply_user_preferences_query(db, current_user)
+    
+    all_matching_users = base_q.limit(MAX_FETCH).all()
+    
+    # Sort by similarity score (most similar first)
+    sorted_users = sort_users_by_similarity(current_user, all_matching_users)
+    
+    # Create a dictionary to quickly look up similarity scores
+    similarity_scores = {user.id: score for user, score in sorted_users}
+    
+    # Extract just the users (without scores) for pagination
+    sorted_user_list = [user for user, _ in sorted_users]
+    
+    # Apply pagination
     limit = max(1, min(params.limit, 50))
-    items = base_q.limit(limit + 1).all()
-
-    # Calculate average ratings for all users
-    user_ids = [u.id for u in items[:limit]]
+    start_idx = 0
+    
+    # If cursor is provided, find the cursor position in the sorted list
+    # The cursor represents the last user ID from the previous page
+    if params.cursor is not None and sorted_user_list:
+        # Find the index of the cursor user in the sorted list
+        cursor_idx = next((i for i, u in enumerate(sorted_user_list) if u.id == params.cursor), None)
+        if cursor_idx is not None:
+            start_idx = cursor_idx + 1
+        else:
+            # Cursor not found in current results, start from beginning
+            # This can happen if the user list changed or cursor is invalid
+            start_idx = 0
+    
+    # Get the page of results
+    page_users = sorted_user_list[start_idx:start_idx + limit + 1]
+    has_more = len(page_users) > limit
+    items_to_return = page_users[:limit]
+    
+    # Calculate average ratings for all users in this page
+    user_ids = [u.id for u in items_to_return]
     rating_stats = db.query(
         StudySessionRating.rated_user_id,
         func.avg((StudySessionRating.rating_1 + StudySessionRating.rating_2 + StudySessionRating.rating_3) / 3.0).label('avg_rating')
@@ -105,13 +136,13 @@ def list_users(
             yap_to_study_ratio=u.yap_to_study_ratio,
             average_rating=rating_dict.get(u.id),
             reputation_score=u.reputation_score,
+            match_score=round(similarity_scores.get(u.id, 0.0), 3),
         )
-        for u in items[:limit]
+        for u in items_to_return
     ]
 
-    has_more = len(items) > limit
-    # Use the last item actually returned to the client to compute the next cursor
-    next_cursor = summaries[-1].id if summaries else None
+    # Use the last item's ID as the next cursor
+    next_cursor = summaries[-1].id if summaries and has_more else None
 
     return CursorPageResponse(items=summaries, next_cursor=next_cursor, has_more=has_more)
 

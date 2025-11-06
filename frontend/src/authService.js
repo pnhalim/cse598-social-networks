@@ -80,3 +80,7 @@ export const submitRating = (reachOutId, criteria, ratings, reflectionNote = nul
   });
 
 export const getUserNotes = () => api.get("/api/notes");
+
+// Update user profile
+export const updateUserProfile = (userData) =>
+  api.put("/api/user/update", userData);

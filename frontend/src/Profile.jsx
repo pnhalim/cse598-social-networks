@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { me } from "./authService";
+import { me, updateUserProfile } from "./authService";
 import collageUrl from "./assets/collage.jpg";
 import { validateTextInput } from "./censorshipUtils";
 import { useSidebar } from "./SidebarContext";
@@ -118,20 +118,18 @@ export default function Profile() {
         classes_taken:  (editData.classes_taken  || []).map(normalizeCourse),
       };
       
-      setUser(prev => ({
-        ...prev,
-        ...payload,
-        // keep arrays as arrays (nulls above are fine for strings, but arrays should be arrays)
-        classes_taking: payload.classes_taking,
-        classes_taken:  payload.classes_taken,
-      }));
-
+      // Actually call the backend API to save the changes
+      const response = await updateUserProfile(payload);
+      
+      // Update local state with the response from backend
+      setUser(response.data);
+      
       setMessage("Profile updated successfully!");
       setIsEditing(false);
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       console.error("Error updating profile:", error);
-      setMessage("Failed to update profile");
+      setMessage(error.response?.data?.detail || "Failed to update profile");
       setTimeout(() => setMessage(""), 3000);
     }
   };
