@@ -41,12 +41,18 @@ export default function Connections() {
     }
   };
 
-  const handleMarkMet = async (reachOutId, met) => {
+  const handleMarkMet = async (reachOutId, met, connection) => {
     try {
       await markConnectionMet(reachOutId, met);
       await loadConnections();
       setShowMetDialog(false);
-      setSelectedConnection(null);
+      
+      // If they met, automatically open the rating dialog
+      if (met && connection) {
+        await handleOpenRating(connection);
+      } else {
+        setSelectedConnection(null);
+      }
     } catch (err) {
       console.error("Error marking connection:", err);
       setError(err.response?.data?.detail || "Failed to update connection status.");
@@ -65,6 +71,14 @@ export default function Connections() {
       console.error("Error loading rating criteria:", err);
       setError(err.response?.data?.detail || "Failed to load rating criteria.");
     }
+  };
+
+  const areAllRatingsComplete = () => {
+    if (ratingCriteria.length !== 3) return false;
+    return ratingCriteria.every(criterion => {
+      const rating = ratings[criterion];
+      return rating !== undefined && rating >= 1 && rating <= 5;
+    });
   };
 
   const handleSubmitRating = async () => {
@@ -294,6 +308,7 @@ export default function Connections() {
           align-items: center;
           gap: 12px;
           margin-bottom: 12px;
+          justify-content: space-between;
         }
 
         .connection-avatar {
@@ -365,36 +380,44 @@ export default function Connections() {
         .connection-actions {
           display: flex;
           gap: 0.5rem;
-          margin-top: 0.75rem;
+          margin-top: 0;
+          align-items: center;
+          flex-shrink: 0;
         }
 
         .btn {
-          padding: 0.45rem 0.9rem;
-          border-radius: 6px;
+          padding: 10px 16px;
+          border-radius: 8px;
           border: none;
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
           transition: all 0.2s ease;
-          font-size: 0.8rem;
+          font-size: 14px;
+          font-family: var(--font);
         }
 
         .btn-primary {
           background: var(--maize);
           color: #111;
+          font-weight: 800;
         }
 
         .btn-primary:hover {
-          background: #ffd54f;
+          background: #e6b800;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(255, 205, 0, 0.3);
         }
 
         .btn-secondary {
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.08);
           color: var(--fg);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
         .btn-secondary:hover {
-          background: rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.12);
+          border-color: rgba(255, 255, 255, 0.25);
+          transform: translateY(-1px);
         }
 
         .btn:disabled {
@@ -409,6 +432,7 @@ export default function Connections() {
           right: 0;
           bottom: 0;
           background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(4px);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -417,87 +441,135 @@ export default function Connections() {
         }
 
         .dialog {
-          background: #1a1a1a;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 12px;
-          padding: 2rem;
-          max-width: 500px;
+          background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+          border: 1px solid rgba(255,255,255,.12);
+          border-radius: 16px;
+          padding: 20px;
+          max-width: 450px;
           width: 100%;
           max-height: 90vh;
           overflow-y: auto;
+          backdrop-filter: blur(10px);
+          box-shadow: 0 8px 32px rgba(0,0,0,.4);
+          font-family: var(--font);
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+
+        .dialog::-webkit-scrollbar {
+          display: none;
         }
 
         .dialog-title {
-          font-size: 1.5rem;
-          font-weight: 700;
-          margin-bottom: 1rem;
+          font-size: clamp(18px, 3vw, 22px);
+          font-weight: 900;
+          margin-bottom: 12px;
           color: var(--maize);
+          font-family: var(--font);
+          line-height: 1.2;
         }
 
         .dialog-content {
-          margin-bottom: 1.5rem;
+          margin-bottom: 16px;
+          color: var(--fg);
+          font-size: 13px;
+          line-height: 1.4;
+          font-family: var(--font);
+        }
+
+        .dialog-content p {
+          margin: 0;
+          color: var(--fg);
+        }
+
+        .dialog-content strong {
+          color: var(--maize);
+          font-weight: 800;
         }
 
         .dialog-actions {
           display: flex;
-          gap: 1rem;
+          gap: 10px;
           justify-content: flex-end;
+          flex-wrap: wrap;
         }
 
         .rating-criterion {
-          margin-bottom: 1.5rem;
+          margin-bottom: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
         }
 
         .rating-label {
-          font-weight: 600;
-          margin-bottom: 0.5rem;
+          font-weight: 700;
           text-transform: capitalize;
+          color: var(--fg);
+          font-size: 13px;
+          font-family: var(--font);
+          flex-shrink: 0;
+          min-width: 0;
         }
 
         .rating-stars {
           display: flex;
-          gap: 0.5rem;
+          gap: 6px;
+          flex-shrink: 0;
         }
 
         .star-btn {
-          background: transparent;
-          border: 1px solid rgba(255, 255, 255, 0.3);
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.15);
           color: var(--fg);
-          width: 40px;
-          height: 40px;
+          width: 36px;
+          height: 36px;
           border-radius: 6px;
           cursor: pointer;
           transition: all 0.2s ease;
-          font-size: 1.25rem;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: var(--font);
         }
 
         .star-btn:hover {
           border-color: var(--maize);
-          background: rgba(255, 203, 5, 0.1);
+          background: rgba(255, 205, 0, 0.15);
+          transform: translateY(-1px);
         }
 
         .star-btn.active {
           background: var(--maize);
           border-color: var(--maize);
           color: #111;
+          box-shadow: 0 4px 12px rgba(255, 205, 0, 0.3);
         }
 
         .reflection-textarea {
           width: 100%;
-          min-height: 100px;
-          padding: 0.75rem;
-          border-radius: 6px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          background: rgba(255, 255, 255, 0.05);
+          min-height: 70px;
+          padding: 10px;
+          border-radius: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          background: rgba(255, 255, 255, 0.08);
           color: var(--fg);
           font-family: var(--font);
-          font-size: 0.875rem;
+          font-size: 13px;
           resize: vertical;
+          transition: all 0.2s ease;
         }
 
         .reflection-textarea:focus {
           outline: none;
           border-color: var(--maize);
+          box-shadow: 0 0 0 3px rgba(255,205,0,.15);
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        .reflection-textarea::placeholder {
+          color: var(--muted);
         }
 
         .empty-state {
@@ -524,18 +596,52 @@ export default function Connections() {
             <div className="connection-list">
               {connections?.reached_out_to?.length > 0 ? (
                 connections.reached_out_to.map((conn) => (
-                  <div key={conn.id} className="connection-item">
+                  <div 
+                    key={conn.id} 
+                    className="connection-item"
+                    onClick={() => {
+                      if (conn.met === null) {
+                        setSelectedConnection(conn);
+                        setShowMetDialog(true);
+                      } else if (conn.met === true && !conn.has_rating) {
+                        handleOpenRating(conn);
+                      }
+                    }}
+                  >
                     <div className="connection-header">
-                      <div className="connection-avatar">
-                        {conn.name
-                          ? conn.name.charAt(0).toUpperCase()
-                          : conn.school_email?.charAt(0).toUpperCase() || "?"}
-                      </div>
-                      <div className="connection-info">
-                        <div className="connection-name">
-                          {conn.name || conn.school_email || "Unknown"}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                        <div className="connection-avatar">
+                          {conn.name
+                            ? conn.name.charAt(0).toUpperCase()
+                            : conn.school_email?.charAt(0).toUpperCase() || "?"}
                         </div>
-                        <div className="connection-email">{conn.school_email}</div>
+                        <div className="connection-info">
+                          <div className="connection-name">
+                            {conn.name || conn.school_email || "Unknown"}
+                          </div>
+                          <div className="connection-email">{conn.school_email}</div>
+                        </div>
+                      </div>
+                      <div className="connection-actions" onClick={(e) => e.stopPropagation()}>
+                        {conn.met === null && (
+                          <button
+                            className="btn btn-secondary"
+                            onClick={() => {
+                              setSelectedConnection(conn);
+                              setShowMetDialog(true);
+                            }}
+                          >
+                            Did you meet?
+                          </button>
+                        )}
+                        {conn.met === true && !conn.has_rating && (
+                          <button
+                            className="btn btn-primary"
+                            onClick={() => handleOpenRating(conn)}
+                          >
+                            Rate Session
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="connection-meta">
@@ -550,29 +656,6 @@ export default function Connections() {
                       )}
                       {conn.has_rating && (
                         <span className="connection-badge rated">Rated</span>
-                      )}
-                    </div>
-                    <div className="connection-actions">
-                      {conn.met === null && (
-                        <>
-                          <button
-                            className="btn btn-secondary"
-                            onClick={() => {
-                              setSelectedConnection(conn);
-                              setShowMetDialog(true);
-                            }}
-                          >
-                            Mark Status
-                          </button>
-                        </>
-                      )}
-                      {conn.met === true && !conn.has_rating && (
-                        <button
-                          className="btn btn-primary"
-                          onClick={() => handleOpenRating(conn)}
-                        >
-                          Rate Session
-                        </button>
                       )}
                     </div>
                   </div>
@@ -588,18 +671,52 @@ export default function Connections() {
             <div className="connection-list">
               {connections?.reached_out_by?.length > 0 ? (
                 connections.reached_out_by.map((conn) => (
-                  <div key={conn.id} className="connection-item">
+                  <div 
+                    key={conn.id} 
+                    className="connection-item"
+                    onClick={() => {
+                      if (conn.met === null) {
+                        setSelectedConnection(conn);
+                        setShowMetDialog(true);
+                      } else if (conn.met === true && !conn.has_rating) {
+                        handleOpenRating(conn);
+                      }
+                    }}
+                  >
                     <div className="connection-header">
-                      <div className="connection-avatar">
-                        {conn.name
-                          ? conn.name.charAt(0).toUpperCase()
-                          : conn.school_email?.charAt(0).toUpperCase() || "?"}
-                      </div>
-                      <div className="connection-info">
-                        <div className="connection-name">
-                          {conn.name || conn.school_email || "Unknown"}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                        <div className="connection-avatar">
+                          {conn.name
+                            ? conn.name.charAt(0).toUpperCase()
+                            : conn.school_email?.charAt(0).toUpperCase() || "?"}
                         </div>
-                        <div className="connection-email">{conn.school_email}</div>
+                        <div className="connection-info">
+                          <div className="connection-name">
+                            {conn.name || conn.school_email || "Unknown"}
+                          </div>
+                          <div className="connection-email">{conn.school_email}</div>
+                        </div>
+                      </div>
+                      <div className="connection-actions" onClick={(e) => e.stopPropagation()}>
+                        {conn.met === null && (
+                          <button
+                            className="btn btn-secondary"
+                            onClick={() => {
+                              setSelectedConnection(conn);
+                              setShowMetDialog(true);
+                            }}
+                          >
+                            Did you meet?
+                          </button>
+                        )}
+                        {conn.met === true && !conn.has_rating && (
+                          <button
+                            className="btn btn-primary"
+                            onClick={() => handleOpenRating(conn)}
+                          >
+                            Rate Session
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="connection-meta">
@@ -614,27 +731,6 @@ export default function Connections() {
                       )}
                       {conn.has_rating && (
                         <span className="connection-badge rated">Rated</span>
-                      )}
-                    </div>
-                    <div className="connection-actions">
-                      {conn.met === null && (
-                        <button
-                          className="btn btn-secondary"
-                          onClick={() => {
-                            setSelectedConnection(conn);
-                            setShowMetDialog(true);
-                          }}
-                        >
-                          Mark Status
-                        </button>
-                      )}
-                      {conn.met === true && !conn.has_rating && (
-                        <button
-                          className="btn btn-primary"
-                          onClick={() => handleOpenRating(conn)}
-                        >
-                          Rate Session
-                        </button>
                       )}
                     </div>
                   </div>
@@ -671,7 +767,7 @@ export default function Connections() {
               <button
                 className="btn btn-secondary"
                 onClick={() =>
-                  handleMarkMet(selectedConnection.reach_out_id, false)
+                  handleMarkMet(selectedConnection.reach_out_id, false, selectedConnection)
                 }
               >
                 No, didn't meet
@@ -679,7 +775,7 @@ export default function Connections() {
               <button
                 className="btn btn-primary"
                 onClick={() =>
-                  handleMarkMet(selectedConnection.reach_out_id, true)
+                  handleMarkMet(selectedConnection.reach_out_id, true, selectedConnection)
                 }
               >
                 Yes, we met
@@ -693,14 +789,13 @@ export default function Connections() {
       {showRatingDialog && selectedConnection && (
         <div className="dialog-overlay" onClick={() => setShowRatingDialog(false)}>
           <div className="dialog" onClick={(e) => e.stopPropagation()}>
-            <h2 className="dialog-title">Rate Study Session</h2>
+            <h2 className="dialog-title">Quick Feedback</h2>
             <div className="dialog-content">
-              <p style={{ marginBottom: "1.5rem", opacity: 0.8 }}>
-                Rate{" "}
+              <p style={{ marginBottom: '16px', opacity: 0.9 }}>
+                How did it go with{" "}
                 <strong>
                   {selectedConnection.name || selectedConnection.school_email}
-                </strong>{" "}
-                on the following criteria:
+                </strong>?
               </p>
 
               {ratingCriteria.map((criterion, idx) => (
@@ -724,17 +819,24 @@ export default function Connections() {
                 </div>
               ))}
 
-              <div style={{ marginTop: "2rem" }}>
+              <div style={{ marginTop: "16px" }}>
                 <label
                   htmlFor="reflection"
-                  style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}
+                  style={{ 
+                    display: "block", 
+                    marginBottom: "8px", 
+                    fontWeight: 700,
+                    color: "var(--muted)",
+                    fontSize: "12px",
+                    fontFamily: "var(--font)"
+                  }}
                 >
-                  What made this session work well? (Optional)
+                  Personal notes (optional):
                 </label>
                 <textarea
                   id="reflection"
                   className="reflection-textarea"
-                  placeholder="Share your thoughts..."
+                  placeholder="For your own reflection, what made this session work well?"
                   value={reflectionNote}
                   onChange={(e) => setReflectionNote(e.target.value)}
                 />
@@ -751,7 +853,7 @@ export default function Connections() {
               <button
                 className="btn btn-primary"
                 onClick={handleSubmitRating}
-                disabled={submitting}
+                disabled={submitting || !areAllRatingsComplete()}
               >
                 {submitting ? "Submitting..." : "Submit Rating"}
               </button>
