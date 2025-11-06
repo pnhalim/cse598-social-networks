@@ -770,6 +770,18 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
               <div className="modal-user-info">
                 <h2>{user.name || 'Anonymous'}</h2>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '8px' }}>
+                  {user.trusted_badge_this_week && (
+                    <div className="info-capsule" style={{ background: 'rgba(255, 203, 5, 0.2)', borderColor: 'var(--maize)' }}>
+                      <span className="info-icon">⭐</span>
+                      <span style={{ fontWeight: 700, color: 'var(--maize)' }}>Trusted Study Buddy This Week</span>
+                    </div>
+                  )}
+                  {user.reputation_score !== undefined && user.reputation_score !== null && (
+                    <div className="info-capsule">
+                      <span className="info-icon">📊</span>
+                      <span>Reputation: {user.reputation_score}</span>
+                    </div>
+                  )}
                   {user.major && (
                     <div className="info-capsule">
                       <span className="info-icon">🎓</span>

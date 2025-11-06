@@ -54,3 +54,29 @@ export const reportUser = (reportedUserId, reason = null, context = null) =>
 
 // Get reach out status
 export const getReachOutStatus = () => api.get("/api/reach-out/status");
+
+// Reputation system API calls
+export const getConnections = () => api.get("/api/connections");
+
+export const markConnectionMet = (reachOutId, met) =>
+  api.post("/api/connections/mark-met", {
+    reach_out_id: reachOutId,
+    met: met,
+  });
+
+export const getRatingCriteria = (reachOutId) =>
+  api.get(`/api/connections/${reachOutId}/rating-criteria`);
+
+export const submitRating = (reachOutId, criteria, ratings, reflectionNote = null) =>
+  api.post("/api/connections/rate", {
+    reach_out_id: reachOutId,
+    criterion_1: criteria[0],
+    rating_1: ratings[0],
+    criterion_2: criteria[1],
+    rating_2: ratings[1],
+    criterion_3: criteria[2],
+    rating_3: ratings[2],
+    reflection_note: reflectionNote || null,
+  });
+
+export const getUserNotes = () => api.get("/api/notes");

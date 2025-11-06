@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUsersList, selectStudyBuddy } from "./authService";
-import ProfileButton from "./ProfileButton";
 import UserProfileModal from "./UserProfileModal";
+import { useSidebar } from "./SidebarContext";
 import collageUrl from "./assets/collage.jpg";
 
 export default function UserList() {
   const navigate = useNavigate();
+  const { isOpen } = useSidebar();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -78,10 +79,6 @@ export default function UserList() {
     setIsFilterOpen(false);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("jwt");
-    navigate("/", { replace: true });
-  };
 
   const loadUsers = async (cursor = null, append = false) => {
   try {
@@ -156,7 +153,7 @@ export default function UserList() {
   
   if (loading) {
     return (
-      <div className="user-list-container">
+      <div className="user-list-wrapper">
         <style>{`
           :root{
             --maize:#FFCD00;
@@ -172,7 +169,12 @@ export default function UserList() {
           * { box-sizing: border-box; }
           body { margin:0; }
 
-          .user-list-container{
+          .user-list-wrapper{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             min-height:100vh;
             background:
               radial-gradient(80% 120% at 50% -10%, #2a3139 0%, transparent 55%),
@@ -186,7 +188,9 @@ export default function UserList() {
             background-color: rgba(14, 18, 23, 0.85);
             color:var(--fg);
             font-family:var(--font);
-            padding:20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
 
           .loading {
@@ -205,7 +209,7 @@ export default function UserList() {
 
   if (error) {
     return (
-      <div className="user-list-container">
+      <div className="user-list-wrapper">
         <style>{`
           :root{
             --maize:#FFCD00;
@@ -221,7 +225,12 @@ export default function UserList() {
           * { box-sizing: border-box; }
           body { margin:0; }
 
-          .user-list-container{
+          .user-list-wrapper{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             min-height:100vh;
             background:
               radial-gradient(80% 120% at 50% -10%, #2a3139 0%, transparent 55%),
@@ -235,7 +244,9 @@ export default function UserList() {
             background-color: rgba(14, 18, 23, 0.85);
             color:var(--fg);
             font-family:var(--font);
-            padding:20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
 
           .error {
@@ -254,7 +265,7 @@ export default function UserList() {
   }
 
   return (
-    <div className="user-list-container">
+    <div className="user-list-wrapper">
       <style>{`
         :root{
           --maize:#FFCD00;
@@ -270,7 +281,12 @@ export default function UserList() {
         * { box-sizing: border-box; }
         body { margin:0; }
 
-        .user-list-container{
+        .user-list-wrapper{
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
           min-height:100vh;
           background:
             radial-gradient(80% 120% at 50% -10%, #2a3139 0%, transparent 55%),
@@ -282,27 +298,49 @@ export default function UserList() {
           background-repeat: no-repeat;
           background-blend-mode: overlay;
           background-color: rgba(14, 18, 23, 0.85);
+          overflow-y: auto;
+        }
+
+        .user-list-container{
+          margin-left: ${isOpen ? '260px' : '70px'};
+          min-height:100vh;
           color:var(--fg);
           font-family:var(--font);
-          padding:20px;
+          padding:20px 20px 20px 12px;
+          transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+          .user-list-container {
+            margin-left: 0;
+            padding-top: 70px;
+          }
         }
 
         .header {
           text-align: center;
           margin-bottom: 30px;
+          margin-left: 0;
+          padding: 40px 20px 20px 20px;
+          margin-left: auto;
+          margin-right: auto;
+          position: relative;
         }
 
         .title {
-          font-size: clamp(28px, 5vw, 48px);
+          font-size: clamp(32px, 6vw, 56px);
           font-weight: 900;
           color: var(--maize);
-          margin: 0 0 10px 0;
+          margin: 0 0 16px 0;
+          line-height: 1.2;
+          text-shadow: 0 2px 20px rgba(255, 205, 0, 0.3);
         }
 
         .subtitle {
           color: var(--muted);
-          font-size: 16px;
+          font-size: clamp(16px, 2vw, 20px);
           margin: 0;
+          line-height: 1.5;
         }
 
         .users-grid {
@@ -581,26 +619,18 @@ export default function UserList() {
           background: rgba(255,255,255,.1);
           border-color: var(--maize);
         }
-
-        .subtitle-row{
-          position: relative;
-          max-width: 1200px;
-          margin: 0 auto;
-          text-align: center;
-        }
-
-        /* pushes button to the far right of the same line as the subtitle */
+          
         .subtitle-row .subtitle{
-          margin: 0 auto;
           text-align: center;
           width: 100%;
         }
 
         .filter-trigger{
-          display:inline-flex;
+          display: inline-flex;
           align-items:center;
+          justify-content: center;
           gap:8px;
-          padding:8px 12px;
+          padding:10px;
           border-radius:10px;
           border:1px solid rgba(255,255,255,.25);
           background:rgba(255,255,255,.06);
@@ -609,10 +639,10 @@ export default function UserList() {
           cursor:pointer;
           transition:all .2s ease;
           position: absolute;
-          right: 0;
-          top: 50%;
-          transform: translateY(-50%);
+          right: 0px;
+          margin-top: 4px;
         }
+        
         .filter-trigger:hover{
           background:rgba(255,255,255,.12);
           border-color:var(--maize);
@@ -697,12 +727,7 @@ export default function UserList() {
 }
       `}</style>
 
-      <ProfileButton />
-      
-      <button className="logout-button" onClick={handleLogout}>
-        Log out
-      </button>
-
+      <div className="user-list-container">
       <div className="header">
         <h1 className="title">Find Your Study Buddy</h1>
         <div className="subtitle-row" ref={filterRef}>
@@ -941,6 +966,7 @@ export default function UserList() {
           setSelectedUser(null);
         }}
       />
+      </div>
     </div>
   );
 }

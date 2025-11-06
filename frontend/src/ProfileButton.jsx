@@ -12,10 +12,17 @@ export default function ProfileButton() {
   return (
     <>
       <style>{`
+        :root{
+          --maize:#FFCD00;
+          --fg:#EAEFF5;
+          --font: "BumbleSansCondensed","BumbleSansCondensedFallback",
+                  -apple-system,"San Francisco","Helvetica Neue",
+                  Roboto,"Segoe WP","Segoe UI",sans-serif;
+        }
         .profile-button {
           position: fixed;
           top: 20px;
-          left: 20px;
+          right: 20px;
           padding: 8px 16px;
           border-radius: 8px;
           border: 1px solid rgba(255,255,255,.3);
@@ -29,6 +36,7 @@ export default function ProfileButton() {
           align-items: center;
           gap: 8px;
           font-size: 14px;
+          font-family: var(--font);
         }
 
         .profile-button:hover {

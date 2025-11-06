@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { me } from "./authService";
 import collageUrl from "./assets/collage.jpg";
 import { validateTextInput } from "./censorshipUtils";
+import { useSidebar } from "./SidebarContext";
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { isOpen } = useSidebar();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -141,7 +143,7 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="profile-container">
+      <div className="profile-wrapper">
         <style>{`
           :root{
             --maize:#FFCD00;
@@ -157,7 +159,12 @@ export default function Profile() {
           * { box-sizing: border-box; }
           body { margin:0; }
 
-          .profile-container{
+          .profile-wrapper{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             min-height:100vh;
             background:
               radial-gradient(80% 120% at 50% -10%, #2a3139 0%, transparent 55%),
@@ -171,7 +178,9 @@ export default function Profile() {
             background-color: rgba(14, 18, 23, 0.85);
             color:var(--fg);
             font-family:var(--font);
-            padding:20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
 
           .loading {
@@ -189,7 +198,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="profile-container">
+    <div className="profile-wrapper">
       <style>{`
         :root{
           --maize:#FFCD00;
@@ -205,7 +214,12 @@ export default function Profile() {
         * { box-sizing: border-box; }
         body { margin:0; }
 
-        .profile-container{
+        .profile-wrapper{
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
           min-height:100vh;
           background:
             radial-gradient(80% 120% at 50% -10%, #2a3139 0%, transparent 55%),
@@ -217,9 +231,23 @@ export default function Profile() {
           background-repeat: no-repeat;
           background-blend-mode: overlay;
           background-color: rgba(14, 18, 23, 0.85);
+          overflow-y: auto;
+        }
+
+        .profile-container{
+          min-height:100vh;
           color:var(--fg);
           font-family:var(--font);
-          padding:20px;
+          padding:20px 20px 20px 12px;
+          margin-left: ${isOpen ? '260px' : '70px'};
+          transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+          .profile-container {
+            margin-left: 0;
+            padding-top: 70px;
+          }
         }
 
         .header {
@@ -232,12 +260,14 @@ export default function Profile() {
           font-weight: 900;
           color: var(--maize);
           margin: 0 0 8px 0;
+          font-family: var(--font);
         }
 
         .subtitle {
           color: var(--muted);
           font-size: 14px;
           margin: 0;
+          font-family: var(--font);
         }
 
         .profile-card {
@@ -337,6 +367,7 @@ export default function Profile() {
           text-shadow: 0 2px 4px rgba(0,0,0,.3);
           position: relative;
           z-index: 1;
+          font-family: var(--font);
         }
 
         .profile-info p {
@@ -346,6 +377,7 @@ export default function Profile() {
           font-weight: 500;
           position: relative;
           z-index: 1;
+          font-family: var(--font);
         }
 
         .profile-info p:last-child {
@@ -390,6 +422,7 @@ export default function Profile() {
           color: var(--maize);
           margin: 0 0 12px 0;
           text-align: center;
+          font-family: var(--font);
         }
 
         .stat-item {
@@ -408,12 +441,14 @@ export default function Profile() {
           color: var(--muted);
           font-size: 12px;
           font-weight: 600;
+          font-family: var(--font);
         }
 
         .stat-value {
           color: var(--fg);
           font-size: 14px;
           font-weight: 700;
+          font-family: var(--font);
         }
 
         .section-title {
@@ -426,6 +461,7 @@ export default function Profile() {
           text-transform: uppercase;
           letter-spacing: 0.5px;
           position: relative;
+          font-family: var(--font);
         }
 
         .section-title::after {
@@ -460,6 +496,7 @@ export default function Profile() {
           margin-bottom: 6px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          font-family: var(--font);
         }
 
         .field-value {
@@ -468,6 +505,7 @@ export default function Profile() {
           font-weight: 500;
           line-height: 1.4;
           padding: 2px 0;
+          font-family: var(--font);
         }
 
         .field-input {
@@ -480,6 +518,7 @@ export default function Profile() {
           font-size: 14px;
           font-weight: 500;
           transition: all 0.2s ease;
+          font-family: var(--font);
         }
 
         .field-input:focus {
@@ -499,6 +538,7 @@ export default function Profile() {
           font-size: 14px;
           font-weight: 500;
           transition: all 0.2s ease;
+          font-family: var(--font);
         }
 
         .field-select:focus {
@@ -525,6 +565,7 @@ export default function Profile() {
           font-size: 14px;
           cursor: pointer;
           transition: all 0.2s ease;
+          font-family: var(--font);
         }
 
         .btn-primary {
@@ -567,6 +608,7 @@ export default function Profile() {
           font-weight: 600;
           z-index: 1000;
           animation: slideIn 0.3s ease;
+          font-family: var(--font);
         }
 
         @keyframes slideIn {
@@ -585,6 +627,7 @@ export default function Profile() {
           background: linear-gradient(135deg, rgba(255,205,0,.25), rgba(255,107,53,.15));
           color: var(--maize);
           padding: 6px 10px;
+          font-family: var(--font);
           border-radius: 6px;
           font-size: 11px;
           font-weight: 700;
@@ -597,6 +640,7 @@ export default function Profile() {
           color: var(--muted);
           font-style: italic;
           font-size: 12px;
+          font-family: var(--font);
         }
 
         .not-provided {
@@ -604,13 +648,15 @@ export default function Profile() {
           font-style: italic;
           font-size: 13px;
           opacity: 0.7;
+          font-family: var(--font);
         }
       `}</style>
 
-      <div className="header">
-        <h1 className="title">My Profile</h1>
-        <p className="subtitle">View and edit your profile information</p>
-      </div>
+      <div className="profile-container">
+        <div className="header">
+          <h1 className="title">My Profile</h1>
+          <p className="subtitle">View and edit your profile information</p>
+        </div>
 
       {message && (
         <div className="message">{message}</div>
@@ -640,12 +686,44 @@ export default function Profile() {
                 <span className="stat-value">{user?.email_verified ? 'Verified' : 'Pending'}</span>
               </div>
               <div className="stat-item">
+                <span className="stat-label">Reputation Score</span>
+                <span className="stat-value">{user?.reputation_score ?? 0}</span>
+              </div>
+              {user?.trusted_badge_this_week && (
+                <div className="stat-item">
+                  <span className="stat-label">Badge</span>
+                  <span className="stat-value" style={{ color: 'var(--maize)', fontWeight: 700 }}>
+                    ⭐ Trusted Study Buddy This Week
+                  </span>
+                </div>
+              )}
+              <div className="stat-item">
                 <span className="stat-label">Current Classes</span>
                 <span className="stat-value">{user?.classes_taking?.length || 0}</span>
               </div>
               <div className="stat-item">
                 <span className="stat-label">Past Classes</span>
                 <span className="stat-value">{user?.classes_taken?.length || 0}</span>
+              </div>
+              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <button
+                  onClick={() => navigate('/connections')}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: 'var(--maize)',
+                    color: '#111',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = '#ffd54f'}
+                  onMouseLeave={(e) => e.target.style.background = 'var(--maize)'}
+                >
+                  View My Connections
+                </button>
               </div>
             </div>
           </div>
@@ -1021,6 +1099,7 @@ export default function Profile() {
             </>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
