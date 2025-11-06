@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUsersList, selectStudyBuddy } from "./authService";
 import ProfileButton from "./ProfileButton";
@@ -17,6 +17,66 @@ export default function UserList() {
   const [selectionMessage, setSelectionMessage] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = useRef(null);
+  const [allUsers, setAllUsers] = useState([]); // full unfiltered list
+  const [filters, setFilters] = useState({
+    major: "",
+    course: "",
+    gender: "",   // "", "male", "female", "non-binary"
+    yapRatio: "",       // "", "Low yap", "Balanced", "High yap"
+    year: ""        // "", "freshman" | "sophomore" | "junior" | "senior" | "graduate"
+  });
+
+  const parseYapPercent = (val) => {
+    if (val == null) return null;
+    const s = String(val).trim();
+    if (/^\d{1,3}$/.test(s)) return parseInt(s, 10);
+    const m = s.match(/(\d{1,3})\s*%?\s*yap/i);
+    if (m) return parseInt(m[1], 10);
+    const f = parseFloat(s);
+    if (!Number.isNaN(f)) {
+      if (f <= 1) return Math.round(f * 100);
+      return Math.round(f);
+    }
+    return null;
+  };
+
+
+  const applyFilters = () => {
+    const majorQ  = filters.major.trim().toLowerCase();
+    const courseQ = filters.course.trim().toLowerCase();
+    const genderQ = filters.gender.trim().toLowerCase();
+    const yapSel  = filters.yapRatio ? parseInt(filters.yapRatio, 10) : null;
+    const yearQ   = filters.year.trim().toLowerCase();   // <— add
+
+    const filtered = allUsers.filter(u => {
+      const genderOk = !genderQ || (u.gender && u.gender.toLowerCase() === genderQ);
+      const majorOk  = !majorQ  || (u.major && u.major.toLowerCase().includes(majorQ));
+    
+      const classes  = Array.isArray(u.classes_taking) ? u.classes_taking : [];
+      const courseOk = !courseQ || classes.some(c => String(c).toLowerCase().includes(courseQ));
+    
+      const userYap  = parseYapPercent(u.yap_to_study_ratio);
+      const yapOk    = !yapSel || (userYap !== null && userYap === yapSel);
+    
+      // be lenient: match by substring so "First-year" or "Senior (4th)" still works
+      const yearVal  = (u.academic_year || "").toLowerCase();
+      const yearOk   = !yearQ || yearVal.includes(yearQ);   // <— add
+    
+      return genderOk && majorOk && courseOk && yapOk && yearOk;
+    });
+
+    setUsers(filtered);
+    setIsFilterOpen(false);
+  };
+
+
+  const clearFilters = () => {
+    setFilters({ major: "", course: "", gender: "", yapRatio: "", year: "" });
+    setUsers(allUsers);
+    setIsFilterOpen(false);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("jwt");
@@ -24,33 +84,37 @@ export default function UserList() {
   };
 
   const loadUsers = async (cursor = null, append = false) => {
-    try {
-      if (append) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-        setError("");
-      }
+  try {
+    if (append) setLoadingMore(true); else { setLoading(true); setError(""); }
 
-      const response = await getUsersList(cursor);
-      const newUsers = response.data.items || [];
-      
-      if (append) {
-        setUsers(prev => [...prev, ...newUsers]);
-      } else {
-        setUsers(newUsers);
-      }
-      
-      setHasMore(response.data.has_more);
-      setNextCursor(response.data.next_cursor);
-    } catch (err) {
-      console.error("Error loading users:", err);
-      setError(err.response?.data?.detail || "Failed to load users");
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
+    const response = await getUsersList(cursor);
+    const newUsers = response.data.items || [];
+
+    if (append) {
+      setAllUsers(prev => [...prev, ...newUsers]);
+      // if filters are active, re-apply after appending
+      setUsers(prev => {
+        const merged = [...prev, ...newUsers];
+        // safer: re-filter from allUsers to avoid drift
+        setTimeout(applyFilters, 0);
+        return merged;
+      });
+    } else {
+      setAllUsers(newUsers);
+      setUsers(newUsers);
     }
-  };
+
+    setHasMore(response.data.has_more);
+    setNextCursor(response.data.next_cursor);
+  } catch (err) {
+    console.error("Error loading users:", err);
+    setError(err.response?.data?.detail || "Failed to load users");
+  } finally {
+    setLoading(false);
+    setLoadingMore(false);
+  }
+};
+
 
   const handleViewProfile = (user) => {
     setSelectedUser(user);
@@ -80,6 +144,16 @@ export default function UserList() {
     loadUsers();
   }, []);
 
+  useEffect(() => {
+    function onDocClick(e) {
+      if (filterRef.current && !filterRef.current.contains(e.target)) {
+        setIsFilterOpen(false);
+      }
+    }
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
+  
   if (loading) {
     return (
       <div className="user-list-container">
@@ -507,6 +581,110 @@ export default function UserList() {
           background: rgba(255,255,255,.1);
           border-color: var(--maize);
         }
+
+        .subtitle-row{
+          position: relative;
+          max-width: 1200px;
+          margin: 0 auto;
+          text-align: center;
+        }
+
+        /* pushes button to the far right of the same line as the subtitle */
+        .subtitle-row .subtitle{
+          margin: 0 auto;
+          text-align: center;
+          width: 100%;
+        }
+
+        .filter-trigger{
+          display:inline-flex;
+          align-items:center;
+          gap:8px;
+          padding:8px 12px;
+          border-radius:10px;
+          border:1px solid rgba(255,255,255,.25);
+          background:rgba(255,255,255,.06);
+          color:var(--fg);
+          font-weight:800;
+          cursor:pointer;
+          transition:all .2s ease;
+          position: absolute;
+          right: 0;
+          top: 50%;
+          transform: translateY(-50%);
+        }
+        .filter-trigger:hover{
+          background:rgba(255,255,255,.12);
+          border-color:var(--maize);
+        }
+        .filter-trigger .chev{ font-size:12px; opacity:.9; }
+
+        .filter-dropdown{
+          position:absolute;
+          top: calc(100% + 8px);
+          right: 0;
+          width: 230px;                 /* was 280px */
+          background: rgba(14,14,16,.95);
+          border: 1px solid rgba(255,255,255,.12);
+          border-radius: 10px;          /* slightly tighter */
+          box-shadow: 0 10px 24px rgba(0,0,0,.40);
+          backdrop-filter: blur(8px);
+          padding: 10px;                /* tighter padding */
+          z-index: 10;
+        }
+
+        .filter-row{
+          display:grid;
+          grid-template-columns: 1fr 1fr;
+          gap:10px;
+          align-items:center;
+          margin-bottom:10px;
+        }
+        .filter-row label{
+          font-size:14px;
+          color:var(--muted);
+        }
+        .filter-row select,
+        .filter-input{
+          width:100%;
+          background: rgba(255,255,255,.08);
+          color: var(--fg);
+          border: 1px solid rgba(255,255,255,.15);
+          border-radius: 8px;
+          padding:8px 10px;
+          font-weight:700;
+          font-size:13px;
+        }
+
+        .filter-actions{
+          display:flex;
+          justify-content:flex-end;
+          gap:8px;
+          margin-top:6px;
+        }
+        .filter-actions .ghost{
+          background:transparent;
+          border:1px solid rgba(255,255,255,.25);
+          color:var(--fg);
+          border-radius:8px;
+          padding:6px 10px;
+          cursor:pointer;
+        }
+        .filter-actions .apply{
+          background: var(--maize);
+          color:#111;
+          border:0;
+          border-radius:8px;
+          padding:6px 12px;
+          font-weight:800;
+          cursor:pointer;
+        }
+        .filter-row select:focus,
+        .filter-input:focus{
+          outline: none;
+          border-color: var(--maize);
+          box-shadow: 0 0 0 3px rgba(255,205,0,.15);
+        }
       `}</style>
 
       <ProfileButton />
@@ -517,7 +695,103 @@ export default function UserList() {
 
       <div className="header">
         <h1 className="title">Find Your Study Buddy</h1>
-        <p className="subtitle">Meet a study buddy and see if they're a good fit!</p>
+        <div className="subtitle-row" ref={filterRef}>
+    <p className="subtitle">Meet a study buddy and see if they're a good fit!</p>
+
+    <button
+      className="filter-trigger"
+      aria-haspopup="menu"
+      aria-expanded={isFilterOpen}
+      onClick={(e) => {
+        e.stopPropagation();
+        setIsFilterOpen((v) => !v);
+      }}
+    >
+      <span>Filter</span>
+      <span className="chev">▾</span>
+    </button>
+
+    {isFilterOpen && (
+  <div className="filter-dropdown" role="menu">
+    <div className="filter-row">
+      <label htmlFor="f-major">Major</label>
+      <input
+        id="f-major"
+        className="filter-input"
+        type="text"
+        placeholder="e.g., Computer Science"
+        value={filters.major}
+        onChange={(e) => setFilters(f => ({ ...f, major: e.target.value }))}
+      />
+    </div>
+
+    <div className="filter-row">
+      <label htmlFor="f-course">Course</label>
+      <input
+        id="f-course"
+        className="filter-input"
+        type="text"
+        placeholder="e.g., EECS 280"
+        value={filters.course}
+        onChange={(e) => setFilters(f => ({ ...f, course: e.target.value }))}
+      />
+    </div>
+
+    <div className="filter-row">
+      <label htmlFor="f-year">Year</label>
+      <select
+        id="f-year"
+        value={filters.year}
+        onChange={(e) => setFilters(f => ({ ...f, year: e.target.value }))}
+      >
+        <option value="">Any</option>
+        <option value="freshman">Freshman</option>
+        <option value="sophomore">Sophomore</option>
+        <option value="junior">Junior</option>
+        <option value="senior">Senior</option>
+        <option value="graduate">Graduate</option>
+      </select>
+    </div>
+
+    <div className="filter-row">
+      <label htmlFor="f-gender">Gender</label>
+      <select
+        id="f-gender"
+        value={filters.gender}
+        onChange={(e) => setFilters(f => ({ ...f, gender: e.target.value }))}
+      >
+        <option value="">Any</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+        <option value="non-binary">Non-binary</option>
+      </select>
+    </div>
+
+    <div className="filter-row">
+      <label htmlFor="f-yap">Yap/Study</label>
+      <select
+        id="f-yap"
+        value={filters.yapRatio}
+        onChange={(e) => setFilters(f => ({ ...f, yapRatio: e.target.value }))}
+      >
+        <option value="">Any</option>
+        <option value="10">10% yap, 90% study</option>
+        <option value="20">20% yap, 80% study</option>
+        <option value="30">30% yap, 70% study</option>
+        <option value="40">40% yap, 60% study</option>
+        <option value="50">50% yap, 50% study</option>
+      </select>
+    </div>
+
+
+    <div className="filter-actions">
+      <button className="ghost" onClick={clearFilters}>Clear</button>
+      <button className="apply" onClick={applyFilters}>Apply</button>
+    </div>
+  </div>
+)}
+
+  </div>
       </div>
 
       {selectionMessage && (
