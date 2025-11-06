@@ -101,6 +101,9 @@ class UserResponse(UserBase):
     match_by_gender: Optional[bool] = None
     match_by_major: Optional[bool] = None
     match_by_academic_year: Optional[bool] = None
+    # Reputation system
+    reputation_score: Optional[int] = None
+    trusted_badge_this_week: Optional[bool] = None
 
     class Config:
         from_attributes = True
@@ -257,3 +260,68 @@ class ReportRequest(BaseModel):
 class ReportResponse(BaseModel):
     message: str
     report_id: int
+
+# Reputation system schemas
+class ConnectionInfo(BaseModel):
+    id: int
+    user_id: int
+    name: Optional[str] = None
+    school_email: Optional[str] = None
+    profile_picture: Optional[str] = None
+    reach_out_id: int
+    created_at: datetime
+    met: Optional[bool] = None
+    has_rating: bool = False
+
+    class Config:
+        from_attributes = True
+
+class ConnectionsResponse(BaseModel):
+    reached_out_to: List[ConnectionInfo]
+    reached_out_by: List[ConnectionInfo]
+
+class MarkMetRequest(BaseModel):
+    reach_out_id: int
+    met: bool
+
+class MarkMetResponse(BaseModel):
+    message: str
+    reach_out_id: int
+
+class RatingCriteriaRequest(BaseModel):
+    reach_out_id: int
+
+class RatingCriteriaResponse(BaseModel):
+    criteria: List[str]  # 3 randomly selected criteria
+
+class SubmitRatingRequest(BaseModel):
+    reach_out_id: int
+    criterion_1: str
+    rating_1: int  # 1-5
+    criterion_2: str
+    rating_2: int  # 1-5
+    criterion_3: str
+    rating_3: int  # 1-5
+    reflection_note: Optional[str] = None
+
+    @validator('rating_1', 'rating_2', 'rating_3')
+    def validate_rating(cls, v):
+        if v < 1 or v > 5:
+            raise ValueError('Rating must be between 1 and 5')
+        return v
+
+class SubmitRatingResponse(BaseModel):
+    message: str
+    rating_id: int
+
+class UserNoteResponse(BaseModel):
+    id: int
+    note_text: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class UserNotesResponse(BaseModel):
+    notes: List[UserNoteResponse]
+    total: int

@@ -6,6 +6,7 @@ import VerifyEmail from "./VerifyEmail.jsx";
 import CompleteProfile from "./CompleteProfile.jsx";
 import Profile from "./Profile.jsx";
 import Home from "./Home.jsx";
+import Connections from "./Connections.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 
 export default function App() {
@@ -29,6 +30,14 @@ export default function App() {
            element={
              <ProtectedRoute>
                <Home />
+             </ProtectedRoute>
+           }
+         />
+        <Route
+           path="/connections"
+           element={
+             <ProtectedRoute>
+               <Connections />
              </ProtectedRoute>
            }
          />

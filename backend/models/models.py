@@ -36,6 +36,10 @@ class User(Base):
     match_by_major = Column(Boolean, default=False)
     match_by_academic_year = Column(Boolean, default=False)
     
+    # Reputation system
+    reputation_score = Column(Integer, default=0)  # Starts at 0, can go negative
+    trusted_badge_this_week = Column(Boolean, default=False)  # "Trusted Study Buddy This Week" badge
+    
     # Relationships for mutual matching
     approvals_given = relationship("UserApproval", foreign_keys="UserApproval.approver_id", back_populates="approver")
     approvals_received = relationship("UserApproval", foreign_keys="UserApproval.approved_user_id", back_populates="approved_user")
@@ -117,11 +121,59 @@ class ReachOut(Base):
     sender_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     recipient_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     personal_message = Column(Text, nullable=True)
+    met = Column(Boolean, nullable=True)  # None = not specified, True = met, False = didn't meet
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     
     # Relationships
     sender = relationship("User", foreign_keys=[sender_id])
     recipient = relationship("User", foreign_keys=[recipient_id])
+    
+    __table_args__ = (
+        {"extend_existing": True},
+    )
+
+
+class StudySessionRating(Base):
+    __tablename__ = "study_session_ratings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    rater_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)  # User giving the rating
+    rated_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)  # User being rated
+    reach_out_id = Column(Integer, ForeignKey("reach_outs.id"), nullable=False)  # Which connection this rating is for
+    
+    # Randomly selected 3 criteria ratings (1-5 stars)
+    criterion_1 = Column(String(50), nullable=False)  # e.g., "timeliness"
+    rating_1 = Column(Integer, nullable=False)  # 1-5
+    criterion_2 = Column(String(50), nullable=False)
+    rating_2 = Column(Integer, nullable=False)
+    criterion_3 = Column(String(50), nullable=False)
+    rating_3 = Column(Integer, nullable=False)
+    
+    # Optional reflection note
+    reflection_note = Column(Text, nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    
+    # Relationships
+    rater = relationship("User", foreign_keys=[rater_id])
+    rated_user = relationship("User", foreign_keys=[rated_user_id])
+    reach_out = relationship("ReachOut")
+    
+    __table_args__ = (
+        {"extend_existing": True},
+    )
+
+
+class UserNote(Base):
+    __tablename__ = "user_notes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    note_text = Column(Text, nullable=False)  # "What made this session work well?" response
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    
+    # Relationship
+    user = relationship("User")
     
     __table_args__ = (
         {"extend_existing": True},

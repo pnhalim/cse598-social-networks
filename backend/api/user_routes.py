@@ -4,12 +4,17 @@ from sqlalchemy import func, and_
 from typing import List
 from datetime import datetime, date
 from core.database import get_db
-from models.models import User, UserReport, ReachOut
+
+from models.models import User, UserReport, ReachOut, StudySessionRating, UserNote
 from models.schemas import (
     UserCreate, UserUpdate, UserResponse, UserListResponse, MessageResponse,
     FilterOptionsResponse, PreferencesUpdate, ReachOutRequest, ReachOutResponse,
-    ReportRequest, ReportResponse, ReachOutStatusResponse
+    ReportRequest, ReportResponse, ReachOutStatusResponse,
+    ConnectionsResponse, ConnectionInfo, MarkMetRequest, MarkMetResponse,
+    RatingCriteriaResponse, SubmitRatingRequest, SubmitRatingResponse,
+    UserNotesResponse, UserNoteResponse
 )
+from services.reputation_service import get_random_criteria, update_user_reputation
 from services.utils import assign_frontend_design
 from services.image_service import image_service
 from services.email_service import send_reach_out_email
@@ -391,4 +396,243 @@ def get_reach_out_status(
         daily_limit=DAILY_REACH_OUT_LIMIT,
         remaining=remaining,
         can_reach_out=can_reach_out
+    )
+
+# Reputation system endpoints
+
+# Get connections (users reached out to and reached out by)
+@router.get("/connections", response_model=ConnectionsResponse)
+def get_connections(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get list of users the current user has reached out to and who have reached out to them"""
+    # Get users reached out to (where current_user is sender)
+    reached_out_to_records = db.query(ReachOut).filter(
+        ReachOut.sender_id == current_user.id
+    ).all()
+    
+    # Get users who reached out (where current_user is recipient)
+    reached_out_by_records = db.query(ReachOut).filter(
+        ReachOut.recipient_id == current_user.id
+    ).all()
+    
+    # Check which connections have ratings
+    rating_reach_out_ids = set(
+        db.query(StudySessionRating.reach_out_id).filter(
+            StudySessionRating.rater_id == current_user.id
+        ).all()
+    )
+    rating_reach_out_ids = {r[0] for r in rating_reach_out_ids}
+    
+    def build_connection_info(reach_out: ReachOut, other_user: User) -> ConnectionInfo:
+        return ConnectionInfo(
+            id=reach_out.id,
+            user_id=other_user.id,
+            name=other_user.name,
+            school_email=other_user.school_email,
+            profile_picture=other_user.profile_picture,
+            reach_out_id=reach_out.id,
+            created_at=reach_out.created_at,
+            met=reach_out.met,
+            has_rating=reach_out.id in rating_reach_out_ids
+        )
+    
+    reached_out_to = [
+        build_connection_info(ro, ro.recipient)
+        for ro in reached_out_to_records
+    ]
+    
+    reached_out_by = [
+        build_connection_info(ro, ro.sender)
+        for ro in reached_out_by_records
+    ]
+    
+    return ConnectionsResponse(
+        reached_out_to=reached_out_to,
+        reached_out_by=reached_out_by
+    )
+
+# Mark connection as met or not met
+@router.post("/connections/mark-met", response_model=MarkMetResponse)
+def mark_connection_met(
+    request: MarkMetRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mark whether a connection actually met or not"""
+    reach_out = db.query(ReachOut).filter(
+        ReachOut.id == request.reach_out_id
+    ).first()
+    
+    if not reach_out:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Connection not found"
+        )
+    
+    # Verify the current user is part of this connection
+    if reach_out.sender_id != current_user.id and reach_out.recipient_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only mark your own connections"
+        )
+    
+    reach_out.met = request.met
+    db.commit()
+    
+    return MarkMetResponse(
+        message="Connection status updated successfully",
+        reach_out_id=reach_out.id
+    )
+
+# Get rating criteria for a connection
+@router.get("/connections/{reach_out_id}/rating-criteria", response_model=RatingCriteriaResponse)
+def get_rating_criteria(
+    reach_out_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get 3 randomly selected rating criteria for a connection"""
+    reach_out = db.query(ReachOut).filter(ReachOut.id == reach_out_id).first()
+    
+    if not reach_out:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Connection not found"
+        )
+    
+    # Verify the current user is part of this connection
+    if reach_out.sender_id != current_user.id and reach_out.recipient_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only rate your own connections"
+        )
+    
+    # Check if already rated
+    existing_rating = db.query(StudySessionRating).filter(
+        and_(
+            StudySessionRating.reach_out_id == reach_out_id,
+            StudySessionRating.rater_id == current_user.id
+        )
+    ).first()
+    
+    if existing_rating:
+        # Return the criteria that were used
+        return RatingCriteriaResponse(
+            criteria=[existing_rating.criterion_1, existing_rating.criterion_2, existing_rating.criterion_3]
+        )
+    
+    # Get 3 random criteria
+    criteria = get_random_criteria()
+    
+    return RatingCriteriaResponse(criteria=criteria)
+
+# Submit rating for a study session
+@router.post("/connections/rate", response_model=SubmitRatingResponse)
+def submit_rating(
+    request: SubmitRatingRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Submit a rating for a study session"""
+    reach_out = db.query(ReachOut).filter(ReachOut.id == request.reach_out_id).first()
+    
+    if not reach_out:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Connection not found"
+        )
+    
+    # Verify the current user is part of this connection
+    if reach_out.sender_id != current_user.id and reach_out.recipient_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only rate your own connections"
+        )
+    
+    # Check if already rated
+    existing_rating = db.query(StudySessionRating).filter(
+        and_(
+            StudySessionRating.reach_out_id == request.reach_out_id,
+            StudySessionRating.rater_id == current_user.id
+        )
+    ).first()
+    
+    if existing_rating:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You have already rated this connection"
+        )
+    
+    # Determine which user is being rated (the other user in the connection)
+    if reach_out.sender_id == current_user.id:
+        rated_user_id = reach_out.recipient_id
+    else:
+        rated_user_id = reach_out.sender_id
+    
+    # Create rating
+    rating = StudySessionRating(
+        rater_id=current_user.id,
+        rated_user_id=rated_user_id,
+        reach_out_id=request.reach_out_id,
+        criterion_1=request.criterion_1,
+        rating_1=request.rating_1,
+        criterion_2=request.criterion_2,
+        rating_2=request.rating_2,
+        criterion_3=request.criterion_3,
+        rating_3=request.rating_3,
+        reflection_note=request.reflection_note
+    )
+    
+    db.add(rating)
+    db.commit()
+    db.refresh(rating)
+    
+    # Update reputation of the rated user
+    update_user_reputation(
+        db,
+        rated_user_id,
+        request.rating_1,
+        request.rating_2,
+        request.rating_3
+    )
+    
+    # Save reflection note if provided
+    if request.reflection_note:
+        note = UserNote(
+            user_id=current_user.id,
+            note_text=request.reflection_note
+        )
+        db.add(note)
+        db.commit()
+    
+    return SubmitRatingResponse(
+        message="Rating submitted successfully",
+        rating_id=rating.id
+    )
+
+# Get user's personal notes (reflection notes)
+@router.get("/notes", response_model=UserNotesResponse)
+def get_user_notes(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the current user's personal reflection notes"""
+    notes = db.query(UserNote).filter(
+        UserNote.user_id == current_user.id
+    ).order_by(UserNote.created_at.desc()).all()
+    
+    note_responses = [
+        UserNoteResponse(
+            id=note.id,
+            note_text=note.note_text,
+            created_at=note.created_at
+        )
+        for note in notes
+    ]
+    
+    return UserNotesResponse(
+        notes=note_responses,
+        total=len(note_responses)
     )
