@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { getUsersList, selectStudyBuddy } from "./authService";
 import ProfileButton from "./ProfileButton";
 import UserProfileModal from "./UserProfileModal";
 import collageUrl from "./assets/collage.jpg";
+import { me, getUsersList, selectStudyBuddy } from "./authService";
 
 export default function UserList() {
   const navigate = useNavigate();
@@ -19,7 +19,8 @@ export default function UserList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterRef = useRef(null);
-  const [allUsers, setAllUsers] = useState([]); // full unfiltered list
+  const [allUsers, setAllUsers] = useState([]); 
+  const [myClasses, setMyClasses] = useState([]);  
   const [filters, setFilters] = useState({
     major: "",
     course: "",
@@ -42,6 +43,30 @@ export default function UserList() {
     return null;
   };
 
+  // Normalize things like "EECS 280" vs "eecs-280" to the same key
+const norm = (s) =>
+  String(s || "")
+    .toUpperCase()
+    .replace(/\s+/g, "")      // remove spaces
+    .replace(/[^A-Z0-9]/g, ""); // drop dashes, slashes, etc.
+
+const toSet = (arr) => new Set((arr || []).map(norm));
+
+const overlapScore = (mineSet, theirsArr) => {
+  if (!mineSet || mineSet.size === 0) return 0;
+  let score = 0;
+  for (const c of (theirsArr || [])) if (mineSet.has(norm(c))) score++;
+  return score;
+};
+
+// Sort by overlap desc, then fall back to name
+const sortByOverlap = (list, mineSet) =>
+  [...list].sort((a, b) => {
+    const sa = overlapScore(mineSet, a.classes_taking);
+    const sb = overlapScore(mineSet, b.classes_taking);
+    if (sb !== sa) return sb - sa;
+    return String(a.name || "").localeCompare(String(b.name || ""));
+  });
 
   const applyFilters = () => {
     const majorQ  = filters.major.trim().toLowerCase();
@@ -68,6 +93,8 @@ export default function UserList() {
     });
 
     setUsers(filtered);
+    const mineSet = toSet(myClasses);
+    setUsers(sortByOverlap(filtered, mineSet));
     setIsFilterOpen(false);
   };
 
@@ -153,6 +180,28 @@ export default function UserList() {
     document.addEventListener("click", onDocClick);
     return () => document.removeEventListener("click", onDocClick);
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await me();
+        const mine = Array.isArray(res.data?.classes_taking)
+          ? res.data.classes_taking
+          : [];
+        setMyClasses(mine);
+      } catch (e) {
+        // If it fails, we just skip reordering
+        console.warn("Failed to load /me for class overlap ranking.", e);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    const mineSet = toSet(myClasses);
+    // Start from the current filtered view (users), but if you prefer from allUsers, swap to allUsers
+    setUsers(prev => sortByOverlap(prev, mineSet));
+  }, [allUsers, myClasses]);
+
   
   if (loading) {
     return (
