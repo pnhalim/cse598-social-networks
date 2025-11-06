@@ -119,3 +119,60 @@ async def send_verification_email(user_email: str, user_name: str, user_major: s
         "verification_token": verify_token_str,
         "rejection_token": reject_token_str
     }
+
+async def send_reach_out_email(
+    sender: "User",
+    recipient: "User",
+    personal_message: str = None,
+    db: Session = None
+):
+    """Send reach out email to recipient and CC sender"""
+    from models.models import User
+    
+    # Helper function to get initials
+    def get_initials(name: str) -> str:
+        if not name:
+            return "?"
+        parts = name.split()
+        if len(parts) >= 2:
+            return (parts[0][0] + parts[-1][0]).upper()
+        return name[0].upper() if name else "?"
+    
+    # Prepare template variables
+    template_vars = {
+        "recipient_name": recipient.name or "Study Buddy",
+        "recipient_email": recipient.school_email,
+        "recipient_initials": get_initials(recipient.name),
+        "recipient_major": recipient.major or "",
+        "recipient_academic_year": recipient.academic_year or "",
+        "recipient_gender": recipient.gender or "",
+        "recipient_classes_taking": recipient.classes_taking or [],
+        "sender_name": sender.name or "A Study Buddy",
+        "sender_email": sender.school_email,
+        "sender_initials": get_initials(sender.name),
+        "sender_major": sender.major or "",
+        "sender_academic_year": sender.academic_year or "",
+        "sender_gender": sender.gender or "",
+        "sender_classes_taking": sender.classes_taking or [],
+        "sender_learn_best_when": sender.learn_best_when or "",
+        "sender_study_snack": sender.study_snack or "",
+        "sender_favorite_study_spot": sender.favorite_study_spot or "",
+        "sender_mbti": sender.mbti or "",
+        "sender_yap_to_study_ratio": sender.yap_to_study_ratio or "",
+        "personal_message": personal_message or ""
+    }
+    
+    # Create message - send to recipient, CC sender
+    message = MessageSchema(
+        subject=f"🎉 {sender.name or 'Someone'} Reached Out to Be Your Study Buddy!",
+        recipients=[recipient.school_email],
+        cc=[sender.school_email],
+        template_body=template_vars,
+        subtype="html"
+    )
+    
+    # Send email
+    fm = FastMail(conf)
+    await fm.send_message(message, template_name="reach_out.html")
+    
+    return True

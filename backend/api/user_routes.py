@@ -2,13 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFi
 from sqlalchemy.orm import Session
 from typing import List
 from core.database import get_db
-from models.models import User
+from models.models import User, UserReport
 from models.schemas import (
     UserCreate, UserUpdate, UserResponse, UserListResponse, MessageResponse,
-    FilterOptionsResponse, PreferencesUpdate
+    FilterOptionsResponse, PreferencesUpdate, ReachOutRequest, ReachOutResponse,
+    ReportRequest, ReportResponse
 )
 from services.utils import assign_frontend_design
 from services.image_service import image_service
+from services.email_service import send_reach_out_email
 from config.auth_dependencies import get_current_user, get_current_active_user
 
 # Create router for user management routes
@@ -195,3 +197,99 @@ def delete_profile_picture(
     db.refresh(current_user)
     
     return current_user
+
+# Send reach out email
+@router.post("/reach-out", response_model=ReachOutResponse, status_code=status.HTTP_200_OK)
+async def send_reach_out(
+    reach_out_request: ReachOutRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Send a reach out email to another user"""
+    # Check if recipient exists
+    recipient = db.query(User).filter(User.id == reach_out_request.recipient_user_id).first()
+    if not recipient:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Recipient user not found"
+        )
+    
+    # Check if recipient has verified email
+    if not recipient.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Recipient's email is not verified"
+        )
+    
+    # Check if sender has verified email
+    if not current_user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Your email must be verified to send reach out emails"
+        )
+    
+    # Don't allow reaching out to yourself
+    if current_user.id == reach_out_request.recipient_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot reach out to yourself"
+        )
+    
+    try:
+        # Send the email
+        await send_reach_out_email(
+            sender=current_user,
+            recipient=recipient,
+            personal_message=reach_out_request.personal_message,
+            db=db
+        )
+        
+        return ReachOutResponse(
+            message=f"Reach out email sent successfully to {recipient.name or recipient.school_email}!",
+            email_sent=True
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send email: {str(e)}"
+        )
+
+# Report a user
+@router.post("/report", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
+def report_user(
+    report_request: ReportRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Report a user for inappropriate behavior"""
+    # Check if reported user exists
+    reported_user = db.query(User).filter(User.id == report_request.reported_user_id).first()
+    if not reported_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Reported user not found"
+        )
+    
+    # Don't allow reporting yourself
+    if current_user.id == report_request.reported_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot report yourself"
+        )
+    
+    # Create the report
+    report = UserReport(
+        reporter_id=current_user.id,
+        reported_user_id=report_request.reported_user_id,
+        reason=report_request.reason,
+        context=report_request.context
+    )
+    
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+    
+    return ReportResponse(
+        message=f"Report submitted successfully. Thank you for helping keep Study Buddy safe.",
+        report_id=report.id
+    )

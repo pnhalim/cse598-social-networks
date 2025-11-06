@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import collageUrl from "./assets/collage.jpg";
-import { reachOut, me } from "./authService";
+import { reachOut, me, reportUser } from "./authService";
 
 export default function UserProfileModal({ user, isOpen, onClose }) {
   const [showEmailPopup, setShowEmailPopup] = useState(false);
@@ -10,6 +10,9 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
   const [isSending, setIsSending] = useState(false);
   const [sendStatus, setSendStatus] = useState(null); // 'success' or 'error'
   const [errorMessage, setErrorMessage] = useState("");
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
+  const [reportStatus, setReportStatus] = useState(null);
 
   // Load current user when modal opens
   useEffect(() => {
@@ -73,6 +76,39 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
     setPersonalMessage("");
     setSendStatus(null);
     setErrorMessage("");
+  };
+
+  const handleReportClick = () => {
+    setShowReportDialog(true);
+  };
+
+  const handleConfirmReport = async () => {
+    if (!currentUser) {
+      return;
+    }
+
+    setIsReporting(true);
+    setReportStatus(null);
+
+    try {
+      await reportUser(user.id, null, "profile_view");
+      setReportStatus('success');
+      // Close dialog after 2 seconds
+      setTimeout(() => {
+        setShowReportDialog(false);
+        setReportStatus(null);
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to report user:', err);
+      setReportStatus('error');
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
+  const handleCancelReport = () => {
+    setShowReportDialog(false);
+    setReportStatus(null);
   };
 
   const getGenderIcon = (gender) => {
@@ -506,6 +542,17 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
           border-color: var(--maize);
         }
 
+        .modal-btn-danger {
+          background: transparent;
+          border: 1px solid rgba(220, 53, 69, 0.5);
+          color: #dc3545;
+        }
+
+        .modal-btn-danger:hover {
+          background: rgba(220, 53, 69, 0.2);
+          border-color: #dc3545;
+        }
+
         .email-popup-overlay {
           position: fixed;
           top: 0;
@@ -633,6 +680,17 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
         .email-btn-secondary:hover {
           background: rgba(255,255,255,.1);
           border-color: var(--maize);
+        }
+
+        .email-btn-danger {
+          background: transparent;
+          border: 1px solid rgba(220, 53, 69, 0.5);
+          color: #dc3545;
+        }
+
+        .email-btn-danger:hover {
+          background: rgba(220, 53, 69, 0.2);
+          border-color: #dc3545;
         }
 
         .copy-success {
@@ -775,6 +833,11 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
           <button className="modal-btn modal-btn-primary" onClick={handleReachOut}>
             Reach Out
           </button>
+          {currentUser && currentUser.id !== user.id && (
+            <button className="modal-btn modal-btn-danger" onClick={handleReportClick}>
+              ⚠️ Report
+            </button>
+          )}
           <button className="modal-btn modal-btn-secondary" onClick={onClose}>
             Close
           </button>
@@ -824,6 +887,51 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
                 className="email-btn email-btn-secondary" 
                 onClick={closeEmailPopup}
                 disabled={isSending}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReportDialog && (
+        <div className="email-popup-overlay" onClick={handleCancelReport}>
+          <div className="email-popup" onClick={(e) => e.stopPropagation()}>
+            <h3>⚠️ Report User</h3>
+            <p style={{ color: 'var(--muted)', margin: '0 0 16px 0', fontSize: '14px' }}>
+              Are you sure you want to report <strong>{user.name || 'this user'}</strong>? This action will be recorded and reviewed by our team.
+            </p>
+            
+            {reportStatus === 'success' && (
+              <div className="status-message success">
+                ✅ Report submitted successfully. Thank you for helping keep Study Buddy safe.
+              </div>
+            )}
+            
+            {reportStatus === 'error' && (
+              <div className="status-message error">
+                ❌ Failed to submit report. Please try again.
+              </div>
+            )}
+            
+            <div className="email-actions">
+              <button 
+                className="email-btn email-btn-danger" 
+                onClick={handleConfirmReport}
+                disabled={isReporting || reportStatus === 'success'}
+                style={{ 
+                  background: reportStatus === 'success' ? '#28a745' : 'transparent',
+                  borderColor: reportStatus === 'success' ? '#28a745' : '#dc3545',
+                  color: reportStatus === 'success' ? 'white' : '#dc3545'
+                }}
+              >
+                {isReporting ? 'Submitting...' : reportStatus === 'success' ? '✓ Reported' : 'Confirm Report'}
+              </button>
+              <button 
+                className="email-btn email-btn-secondary" 
+                onClick={handleCancelReport}
+                disabled={isReporting}
               >
                 Cancel
               </button>

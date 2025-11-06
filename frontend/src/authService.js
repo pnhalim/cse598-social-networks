@@ -43,3 +43,11 @@ export const reachOut = (recipientUserId, personalMessage) =>
     recipient_user_id: recipientUserId,
     personal_message: personalMessage || null,
   });
+
+// Report a user
+export const reportUser = (reportedUserId, reason = null, context = null) =>
+  api.post("/api/report", {
+    reported_user_id: reportedUserId,
+    reason: reason || null,
+    context: context || null,
+  });

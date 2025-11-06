@@ -233,3 +233,20 @@ class SelectBuddyResponse(BaseModel):
     message: str
     selected_user_id: int
     selected_user_email: str
+
+class ReachOutRequest(BaseModel):
+    recipient_user_id: int
+    personal_message: Optional[str] = None
+
+class ReachOutResponse(BaseModel):
+    message: str
+    email_sent: bool
+
+class ReportRequest(BaseModel):
+    reported_user_id: int
+    reason: Optional[str] = None
+    context: Optional[str] = None  # e.g., "profile_view", "reach_out"
+
+class ReportResponse(BaseModel):
+    message: str
+    report_id: int

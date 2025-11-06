@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Someone Reached Out to Be Your Study Buddy!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #00274C;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 30px;
+            border-radius: 0 0 8px 8px;
+        }
+        .profile-section {
+            background-color: white;
+            border: 2px solid #FFCB05;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #FFCB05;
+        }
+        .profile-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FFCB05, #ff6b35);
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #00274C;
+            padding: 0;
+            margin: 0;
+            display: table;
+        }
+        .profile-avatar span {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: center;
+            line-height: 1;
+            width: 60px;
+            height: 60px;
+        }
+        .profile-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00274C;
+            margin: 0;
+        }
+        .profile-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .info-item {
+            padding: 8px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .info-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .info-value {
+            font-size: 14px;
+            color: #00274C;
+            font-weight: 600;
+        }
+        .message-box {
+            background-color: white;
+            border-left: 4px solid #FFCB05;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .message-box p {
+            margin: 0;
+            color: #333;
+            font-style: italic;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #666;
+        }
+        .emoji {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📚 Study Buddy</h1>
+        <p>Someone Wants to Study With You! 🎉</p>
+    </div>
+    
+    <div class="content">
+        <h2>Hey {{ recipient_name }}! 👋</h2>
+        
+        <p><strong>{{ sender_name }}</strong> reached out to be a study buddy! How exciting is that? 🎊</p>
+        
+        {% if personal_message and personal_message.strip() %}
+        <div class="message-box">
+            <p><strong>{{ sender_name }} says:</strong></p>
+            <p>"{{ personal_message }}"</p>
+        </div>
+        {% endif %}
+        
+        <h3 style="color: #00274C; margin-top: 30px;">Here's {{ sender_name }}'s Profile:</h3>
+        
+        <div class="profile-section">
+            <div class="profile-header">
+                <div class="profile-avatar"><span>{{ sender_initials }}</span></div>
+                <h3 class="profile-name">{{ sender_name }}</h3>
+            </div>
+            
+            <div class="profile-info">
+                {% if sender_major %}
+                <div class="info-item">
+                    <div class="info-label">🎓 Major</div>
+                    <div class="info-value">{{ sender_major }}</div>
+                </div>
+                {% endif %}
+                
+                {% if sender_academic_year %}
+                <div class="info-item">
+                    <div class="info-label">📚 Year</div>
+                    <div class="info-value">{{ sender_academic_year }}</div>
+                </div>
+                {% endif %}
+                
+                {% if sender_gender %}
+                <div class="info-item">
+                    <div class="info-label">👤 Gender</div>
+                    <div class="info-value">{{ sender_gender }}</div>
+                </div>
+                {% endif %}
+                
+                {% if sender_email %}
+                <div class="info-item">
+                    <div class="info-label">✉️ Email</div>
+                    <div class="info-value">{{ sender_email }}</div>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if sender_classes_taking and sender_classes_taking|length > 0 %}
+            <div style="margin-top: 15px;">
+                <div class="info-label">📖 Current Classes</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;">
+                    {% for class in sender_classes_taking %}
+                    <span style="background-color: #FFCB05; color: #00274C; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">{{ class }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if sender_learn_best_when %}
+            <div style="margin-top: 15px;">
+                <div class="info-label">🤓 I learn best when...</div>
+                <div class="info-value">{{ sender_learn_best_when }}</div>
+            </div>
+            {% endif %}
+            
+            {% if sender_study_snack %}
+            <div style="margin-top: 15px;">
+                <div class="info-label">🤤 Favorite Study Snack</div>
+                <div class="info-value">{{ sender_study_snack }}</div>
+            </div>
+            {% endif %}
+            
+            {% if sender_favorite_study_spot %}
+            <div style="margin-top: 15px;">
+                <div class="info-label">📚 Go-to Study Spot</div>
+                <div class="info-value">{{ sender_favorite_study_spot }}</div>
+            </div>
+            {% endif %}
+            
+            {% if sender_mbti %}
+            <div style="margin-top: 15px;">
+                <div class="info-label">🧠 Personality Type</div>
+                <div class="info-value">{{ sender_mbti }}</div>
+            </div>
+            {% endif %}
+            
+            {% if sender_yap_to_study_ratio %}
+            <div style="margin-top: 15px;">
+                <div class="info-label">💬📖 Chat vs Study Ratio</div>
+                <div class="info-value">{{ sender_yap_to_study_ratio }}</div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <h3 style="color: #00274C; margin-top: 30px;">Your Profile (for reference):</h3>
+        
+        <div class="profile-section">
+            <div class="profile-header">
+                <div class="profile-avatar"><span>{{ recipient_initials }}</span></div>
+                <h3 class="profile-name">{{ recipient_name }}</h3>
+            </div>
+            
+            <div class="profile-info">
+                {% if recipient_major %}
+                <div class="info-item">
+                    <div class="info-label">🎓 Major</div>
+                    <div class="info-value">{{ recipient_major }}</div>
+                </div>
+                {% endif %}
+                
+                {% if recipient_academic_year %}
+                <div class="info-item">
+                    <div class="info-label">📚 Year</div>
+                    <div class="info-value">{{ recipient_academic_year }}</div>
+                </div>
+                {% endif %}
+                
+                {% if recipient_gender %}
+                <div class="info-item">
+                    <div class="info-label">👤 Gender</div>
+                    <div class="info-value">{{ recipient_gender }}</div>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if recipient_classes_taking and recipient_classes_taking|length > 0 %}
+            <div style="margin-top: 15px;">
+                <div class="info-label">📖 Current Classes</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;">
+                    {% for class in recipient_classes_taking %}
+                    <span style="background-color: #FFCB05; color: #00274C; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">{{ class }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <p style="margin-top: 30px; padding: 15px; background-color: #FFCB05; border-radius: 8px; text-align: center; font-weight: bold; color: #00274C;">
+            Ready to hit the books together? 📖✨
+        </p>
+        
+        <p>Feel free to reply to this email to start the conversation! We've CC'd {{ sender_name }} so you can connect directly.</p>
+        
+        <p style="margin-top: 20px; padding: 10px; background-color: #f9f9f9; border-left: 3px solid #dc3545; font-size: 12px; color: #666;">
+            <strong>Safety Note:</strong> If you have any concerns about this user, you can report them through the Study Buddy platform. We take all reports seriously and will review them promptly.
+        </p>
+        
+        <p>Happy studying! 🎓</p>
+        
+        <p>Best regards,<br>The Study Buddy Team</p>
+    </div>
+    
+    <div class="footer">
+        <p>This email was sent to {{ recipient_email }}. You were matched through Study Buddy!</p>
+        <p>&copy; 2024 Study Buddy. All rights reserved.</p>
+    </div>
+</body>
+</html>
+

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script to create test users for testing the mutual matching functionality.
-This will create users with both design1 and design2 assignments.
+Script to create test users for testing the Study Buddy functionality.
+All users are assigned to design1.
 """
 
 import sys
@@ -167,6 +167,58 @@ def create_test_users():
             "favorite_study_spot": "G.G. Brown Building",
             "mbti": "ISTP",
             "yap_to_study_ratio": "20% yap, 80% study"
+        },
+        {
+            "name": "Patrick Halim",
+            "gender": "Male",
+            "major": "Computer Science",
+            "academic_year": "Senior",
+            "classes_taking": ["EECS 481", "EECS 485", "EECS 494"],
+            "learn_best_when": "Afternoon with focus music",
+            "study_snack": "Coffee and snacks",
+            "favorite_study_spot": "Duderstadt Center",
+            "mbti": "INTJ",
+            "yap_to_study_ratio": "30% yap, 70% study",
+            "email": "pnhalim@umich.edu"
+        },
+        {
+            "name": "Brian Zhang",
+            "gender": "Male",
+            "major": "Computer Science",
+            "academic_year": "Senior",
+            "classes_taking": ["EECS 481", "EECS 485", "EECS 494"],
+            "learn_best_when": "Evening sessions",
+            "study_snack": "Trail mix and water",
+            "favorite_study_spot": "Hatcher Library",
+            "mbti": "ENTP",
+            "yap_to_study_ratio": "40% yap, 60% study",
+            "email": "zhangbri@umich.edu"
+        },
+        {
+            "name": "Audrey Lin",
+            "gender": "Female",
+            "major": "Computer Science",
+            "academic_year": "Senior",
+            "classes_taking": ["EECS 481", "EECS 485", "EECS 494"],
+            "learn_best_when": "Morning with coffee",
+            "study_snack": "Fruit and granola",
+            "favorite_study_spot": "Shapiro Library",
+            "mbti": "ISFJ",
+            "yap_to_study_ratio": "25% yap, 75% study",
+            "email": "audreyll@umich.edu"
+        },
+        {
+            "name": "Tejas Maire",
+            "gender": "Male",
+            "major": "Computer Science",
+            "academic_year": "Senior",
+            "classes_taking": ["EECS 481", "EECS 485", "EECS 494"],
+            "learn_best_when": "Late afternoon",
+            "study_snack": "Energy drinks and chips",
+            "favorite_study_spot": "Duderstadt Center",
+            "mbti": "ESTP",
+            "yap_to_study_ratio": "35% yap, 65% study",
+            "email": "tmaire@umich.edu"
         }
     ]
     
@@ -177,27 +229,27 @@ def create_test_users():
         existing_emails = {user.school_email for user in db.query(User).all()}
         
         created_count = 0
-        design1_count = 0
-        design2_count = 0
         
         for user_data in test_users_data:
-            # Generate a unique random email
-            while True:
-                random_email = generate_random_email()
-                if random_email not in existing_emails:
-                    break
-            
-            # Assign design - alternate between design1 and design2 for better distribution
-            if created_count % 2 == 0:
-                assigned_design = "design1"
-                design1_count += 1
+            # Use specified email if provided, otherwise generate a unique random email
+            if "email" in user_data and user_data["email"]:
+                user_email = user_data["email"]
+                if user_email in existing_emails:
+                    print(f"Skipping {user_data['name']} ({user_email}) - email already exists")
+                    continue
             else:
-                assigned_design = "design2"
-                design2_count += 1
+                # Generate a unique random email
+                while True:
+                    user_email = generate_random_email()
+                    if user_email not in existing_emails:
+                        break
+            
+            # All users are assigned to design1
+            assigned_design = "design1"
             
             # Create user
             user = User(
-                school_email=random_email,
+                school_email=user_email,
                 password_hash=hash_password("testpassword123"),  # Default password for all test users
                 name=user_data["name"],
                 gender=user_data["gender"],
@@ -216,13 +268,12 @@ def create_test_users():
             
             db.add(user)
             created_count += 1
-            existing_emails.add(random_email)  # Add to existing emails to avoid duplicates
-            print(f"Created user: {user_data['name']} ({random_email}) - Design: {assigned_design}")
+            existing_emails.add(user_email)  # Add to existing emails to avoid duplicates
+            print(f"Created user: {user_data['name']} ({user_email}) - Design: {assigned_design}")
         
         db.commit()
         print(f"\nSuccessfully created {created_count} test users!")
-        print(f"Design1 users: {design1_count}")
-        print(f"Design2 users: {design2_count}")
+        print(f"All users assigned to design1")
         print("\nTest user credentials:")
         print("Password: testpassword123")
         print("\nAll created users:")

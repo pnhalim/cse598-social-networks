@@ -16,7 +16,7 @@ class User(Base):
     major = Column(String(100), nullable=True)  # Made optional for step-by-step registration
     profile_picture = Column(String(255), nullable=True)  # URL or file path
     academic_year = Column(String(20), nullable=True)  # Made optional for step-by-step registration
-    frontend_design = Column(String(20), nullable=True)  # 'design1' or 'design2' - assigned after profile completion
+    frontend_design = Column(String(20), nullable=True)  # 'design1' - assigned after profile completion
     email_verified = Column(Boolean, nullable=True)  # None=pending, True=verified, False=rejected
     profile_completed = Column(Boolean, default=False)  # Track if profile setup is complete
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -88,4 +88,23 @@ class UserSelection(Base):
 
     __table_args__ = (
         {"sqlite_autoincrement": True},
+    )
+
+
+class UserReport(Base):
+    __tablename__ = "user_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    reporter_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    reported_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    reason = Column(Text, nullable=True)  # Optional reason for the report
+    context = Column(String(50), nullable=True)  # e.g., "profile_view", "reach_out", etc.
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    reporter = relationship("User", foreign_keys=[reporter_id])
+    reported_user = relationship("User", foreign_keys=[reported_user_id])
+    
+    __table_args__ = (
+        {"extend_existing": True},
     )
