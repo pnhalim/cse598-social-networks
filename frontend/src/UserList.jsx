@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-<<<<<<< HEAD
 import ProfileButton from "./ProfileButton";
-=======
 import { getUsersList, selectStudyBuddy } from "./authService";
->>>>>>> 4ef56cd68620e0c42b6d7d2dba365b76dcd79e36
 import UserProfileModal from "./UserProfileModal";
 import { useSidebar } from "./SidebarContext";
 import collageUrl from "./assets/collage.jpg";
