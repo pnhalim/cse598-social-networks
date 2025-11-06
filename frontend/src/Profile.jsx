@@ -12,6 +12,8 @@ export default function Profile() {
   const [editData, setEditData] = useState({});
   const [message, setMessage] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [newCurrentClass, setNewCurrentClass] = useState("");
+  const [newPastClass, setNewPastClass] = useState("");
 
   useEffect(() => {
     const loadUser = async () => {
@@ -27,7 +29,9 @@ export default function Profile() {
           study_snack: response.data.study_snack || "",
           favorite_study_spot: response.data.favorite_study_spot || "",
           mbti: response.data.mbti || "",
-          yap_to_study_ratio: response.data.yap_to_study_ratio || ""
+          yap_to_study_ratio: response.data.yap_to_study_ratio || "",
+          classes_taking: Array.isArray(response.data.classes_taking) ? response.data.classes_taking : [],
+          classes_taken:  Array.isArray(response.data.classes_taken)  ? response.data.classes_taken  : [],
         });
       } catch (error) {
         console.error("Error loading user:", error);
@@ -67,6 +71,28 @@ export default function Profile() {
     }));
   };
 
+  // Optional: normalize course labels a bit, e.g., "eecs 280" -> "EECS 280"
+  const normalizeCourse = (s) =>
+    String(s).trim().replace(/\s+/g, " ").toUpperCase();
+
+  const addClassTo = (key, value) => {
+    const v = normalizeCourse(value);
+    if (!v) return;
+    setEditData(prev => {
+      const next = new Set(prev[key] || []);
+      next.add(v); // dedupe
+      return { ...prev, [key]: Array.from(next) };
+    });
+  };
+
+  const removeClassAt = (key, idx) => {
+    setEditData(prev => {
+      const arr = [...(prev[key] || [])];
+      arr.splice(idx, 1);
+      return { ...prev, [key]: arr };
+    });
+  };
+
   const handleSave = async () => {
     // Check for field errors
     if (Object.keys(fieldErrors).length > 0) {
@@ -76,7 +102,28 @@ export default function Profile() {
     }
     
     try {
-      // TODO: Implement profile update API call
+      const payload = {
+        name: editData.name?.trim() || null,
+        gender: editData.gender || null,
+        major: editData.major?.trim() || null,
+        academic_year: editData.academic_year || null,
+        learn_best_when: editData.learn_best_when?.trim() || null,
+        study_snack: editData.study_snack?.trim() || null,
+        favorite_study_spot: editData.favorite_study_spot?.trim() || null,
+        mbti: editData.mbti?.trim()?.toUpperCase() || null,
+        yap_to_study_ratio: editData.yap_to_study_ratio || null,
+        classes_taking: (editData.classes_taking || []).map(normalizeCourse),
+        classes_taken:  (editData.classes_taken  || []).map(normalizeCourse),
+      };
+      
+      setUser(prev => ({
+        ...prev,
+        ...payload,
+        // keep arrays as arrays (nulls above are fine for strings, but arrays should be arrays)
+        classes_taking: payload.classes_taking,
+        classes_taken:  payload.classes_taken,
+      }));
+
       setMessage("Profile updated successfully!");
       setIsEditing(false);
       setTimeout(() => setMessage(""), 3000);
@@ -800,32 +847,150 @@ export default function Profile() {
           
           <div className="field">
             <label className="field-label">Current Classes</label>
-            <div className="field-value">
-              {user?.classes_taking && user.classes_taking.length > 0 ? (
-                <div className="classes-list">
-                  {user.classes_taking.map((cls, index) => (
-                    <div key={index} className="class-tag">{cls}</div>
-                  ))}
-                </div>
-              ) : (
-                <span className="no-classes">No current classes listed</span>
-              )}
-            </div>
+            {isEditing ? (
+     <>
+       <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+         <input
+           className="field-input"
+           type="text"
+           placeholder="e.g., EECS 280"
+           value={newCurrentClass}
+           onChange={(e) => setNewCurrentClass(e.target.value)}
+           onKeyDown={(e) => {
+             if (e.key === "Enter") {
+               addClassTo("classes_taking", newCurrentClass);
+               setNewCurrentClass("");
+             }
+           }}
+         />
+         <button
+           className="btn btn-secondary"
+           type="button"
+           onClick={() => {
+             addClassTo("classes_taking", newCurrentClass);
+             setNewCurrentClass("");
+           }}
+         >
+           Add
+         </button>
+       </div>
+       <div className="classes-list">
+         {(editData.classes_taking || []).map((cls, idx) => (
+           <div key={idx} className="class-tag" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+             <span>{cls}</span>
+             <button
+               type="button"
+               onClick={() => removeClassAt("classes_taking", idx)}
+               style={{
+                 border: "none",
+                 background: "transparent",
+                 color: "currentColor",
+                 cursor: "pointer",
+                 fontWeight: 900,
+               }}
+               aria-label={`Remove ${cls}`}
+               title="Remove"
+             >
+               ×
+             </button>
+           </div>
+         ))}
+         {(editData.classes_taking || []).length === 0 && (
+           <span className="no-classes">No current classes listed</span>
+         )}
+       </div>
+     </>
+   ) : (
+     <div className="field-value">
+       {user?.classes_taking && user.classes_taking.length > 0 ? (
+         <div className="classes-list">
+           {user.classes_taking.map((cls, index) => (
+             <div key={index} className="class-tag">{cls}</div>
+           ))}
+         </div>
+       ) : (
+         <span className="no-classes">No current classes listed</span>
+       )}
+     </div>
+   )}
           </div>
 
           <div className="field">
             <label className="field-label">Past Classes</label>
-            <div className="field-value">
-              {user?.classes_taken && user.classes_taken.length > 0 ? (
-                <div className="classes-list">
-                  {user.classes_taken.map((cls, index) => (
-                    <div key={index} className="class-tag">{cls}</div>
-                  ))}
-                </div>
-              ) : (
-                <span className="no-classes">No past classes listed</span>
-              )}
+            {isEditing ? (
+      <>
+        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+          <input
+            className="field-input"
+            type="text"
+            placeholder="e.g., MATH 215"
+            value={newPastClass}
+            onChange={(e) => setNewPastClass(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                addClassTo("classes_taken", newPastClass);
+                setNewPastClass("");
+              }
+            }}
+          />
+          <button
+            className="btn btn-secondary"
+            type="button"
+            onClick={() => {
+              addClassTo("classes_taken", newPastClass);
+              setNewPastClass("");
+            }}
+          >
+            Add
+          </button>
+        </div>
+
+        <div className="classes-list">
+          {(editData.classes_taken || []).map((cls, idx) => (
+            <div
+              key={idx}
+              className="class-tag"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <span>{cls}</span>
+              <button
+                type="button"
+                onClick={() => removeClassAt("classes_taken", idx)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "currentColor",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                }}
+                aria-label={`Remove ${cls}`}
+                title="Remove"
+              >
+                ×
+              </button>
             </div>
+          ))}
+
+          {(editData.classes_taken || []).length === 0 && (
+            <span className="no-classes">No past classes listed</span>
+          )}
+        </div>
+      </>
+    ) : (
+      <div className="field-value">
+        {user?.classes_taken && user.classes_taken.length > 0 ? (
+          <div className="classes-list">
+            {user.classes_taken.map((cls, index) => (
+              <div key={index} className="class-tag">
+                {cls}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <span className="no-classes">No past classes listed</span>
+        )}
+      </div>
+    )}
           </div>
         </div>
 
