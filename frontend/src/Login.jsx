@@ -454,76 +454,85 @@ export default function StudyBuddy() {
             </div>
           )}
 
-          <div style={{ marginTop: "16px", textAlign: "center" }}>
-            {!showResend ? (
-              <button 
-                type="button" 
-                className="link" 
-                onClick={() => setShowResend(true)}
-                style={{ 
-                  color: "#FFCB05", 
-                  background: "none", 
-                  border: "none", 
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  textDecoration: "underline"
-                }}
-              >
-                {isSignUp ? "Didn't receive verification email?" : "Didn't receive verification email?"}
-              </button>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <button 
-                  type="button" 
-                  className="btn" 
-                  onClick={handleResendVerification}
-                  style={{ 
-                    background: "#FFCB05", 
-                    color: "#111", 
-                    border: "none", 
-                    padding: "8px 16px",
-                    borderRadius: "8px",
+          {isSignUp && (
+            <div style={{ marginTop: "16px", textAlign: "center" }}>
+              {!showResend ? (
+                <button
+                  type="button"
+                  className="link"
+                  onClick={() => setShowResend(true)}
+                  style={{
+                    color: "#FFCB05",
+                    background: "none",
+                    border: "none",
                     cursor: "pointer",
                     fontSize: "14px",
-                    fontWeight: "600"
+                    textDecoration: "underline"
                   }}
                 >
-                  Resend Verification Email
+                  Didn't receive verification email?
                 </button>
-                <button 
-                  type="button" 
-                  className="link" 
-                  onClick={() => {
-                    setShowResend(false);
-                    setResendMessage("");
-                  }}
-                  style={{ 
-                    color: "#C8D3DE", 
-                    background: "none", 
-                    border: "none", 
-                    cursor: "pointer",
-                    fontSize: "12px"
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={handleResendVerification}
+                    style={{
+                      background: "#FFCB05",
+                      color: "#111",
+                      border: "none",
+                      padding: "8px 16px",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      fontWeight: "600"
+                    }}
+                  >
+                    Resend Verification Email
+                  </button>
+                  <button
+                    type="button"
+                    className="link"
+                    onClick={() => {
+                      setShowResend(false);
+                      setResendMessage("");
+                    }}
+                    style={{
+                      color: "#C8D3DE",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: "12px"
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+
+              {resendMessage && (
+                <div
+                  style={{
+                    marginTop: "8px",
+                    padding: "8px",
+                    borderRadius: "6px",
+                    backgroundColor: resendMessage.includes("sent")
+                      ? "rgba(40, 167, 69, 0.2)"
+                      : "rgba(220, 53, 69, 0.2)",
+                    color: resendMessage.includes("sent") ? "#28a745" : "#dc3545",
+                    fontSize: "12px",
+                    border: `1px solid ${
+                      resendMessage.includes("sent") ? "#28a745" : "#dc3545"
+                    }`
                   }}
                 >
-                  Cancel
-                </button>
-              </div>
-            )}
-            
-            {resendMessage && (
-              <div style={{ 
-                marginTop: "8px", 
-                padding: "8px", 
-                borderRadius: "6px",
-                backgroundColor: resendMessage.includes("sent") ? "rgba(40, 167, 69, 0.2)" : "rgba(220, 53, 69, 0.2)",
-                color: resendMessage.includes("sent") ? "#28a745" : "#dc3545",
-                fontSize: "12px",
-                border: `1px solid ${resendMessage.includes("sent") ? "#28a745" : "#dc3545"}`
-              }}>
-                {resendMessage}
-              </div>
-            )}
-          </div>
+                  {resendMessage}
+                </div>
+              )}
+            </div>
+          )}
+
         </section>
 
         <div className="sub">Use Study Buddy to find study partners and project partners in a low-commitment context. Meet once, and if you hit it off, then you've found a study buddy!</div>
