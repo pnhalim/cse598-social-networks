@@ -190,7 +190,7 @@ export default function StudyBuddy() {
         }
 
         .headline{
-          font-size:clamp(32px, 7vw, 72px);
+          font-size: clamp(28px, 6vw, 60px);
           font-weight:900;
           color:var(--maize);
           margin:0;
@@ -284,6 +284,39 @@ export default function StudyBuddy() {
           -webkit-text-stroke: 2px rgba(0,0,0,.35);
           text-shadow:0 8px 24px rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.35);
         }
+          /* Inline-link buttons under the form (Log in / Sign up) */
+        .switch{
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 8px;                 /* even spacing between the text and button */
+          color: var(--muted);
+          font-weight: 700;
+        }
+
+        .switch .link{
+          appearance: none;
+          -webkit-appearance: none;
+          background: none;
+          border: none;
+          padding: 0 6px;           /* small horizontal padding so it aligns nicely */
+          color: var(--maize);
+          text-decoration: underline;
+          font-weight: 800;
+          font-size: 14px;
+          cursor: pointer;
+          transition: color .2s ease;
+        }
+
+        .switch .link:hover{
+          color: #fff;
+        }
+
+        .switch .link:focus-visible{
+          outline: 2px solid var(--maize);
+          outline-offset: 2px;
+        }
+
         @supports (font-size: 1cqi){
           .overlay-title .study,
           .overlay-title .buddy{
@@ -373,10 +406,8 @@ export default function StudyBuddy() {
       <div className="brand">Study Buddy</div>
 
       <div className="center">
-        <h1 className="headline">Bit by Bit</h1>
-        <h1 className="headline">Side by side</h1>
-
-        <div className="sub">It’s better with a buddy.</div>
+        <h1 className="headline">Better Studying</h1>
+        <h1 className="headline">Starts With a Buddy</h1>
 
         <section className="card" aria-label="Authentication">
           <div className="tabs" role="tablist" aria-label="Auth switch">

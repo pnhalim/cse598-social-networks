@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import collageUrl from "./assets/collage.jpg";
 import { reachOut, me, reportUser, getReachOutStatus } from "./authService";
 import { validateTextInput } from "./censorshipUtils";
 
