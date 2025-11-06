@@ -108,3 +108,21 @@ class UserReport(Base):
     __table_args__ = (
         {"extend_existing": True},
     )
+
+
+class ReachOut(Base):
+    __tablename__ = "reach_outs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    recipient_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    personal_message = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    
+    # Relationships
+    sender = relationship("User", foreign_keys=[sender_id])
+    recipient = relationship("User", foreign_keys=[recipient_id])
+    
+    __table_args__ = (
+        {"extend_existing": True},
+    )

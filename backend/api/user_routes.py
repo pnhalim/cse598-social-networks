@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from sqlalchemy.orm import Session
+from sqlalchemy import func, and_
 from typing import List
+from datetime import datetime, date
 from core.database import get_db
-from models.models import User, UserReport
+from models.models import User, UserReport, ReachOut
 from models.schemas import (
     UserCreate, UserUpdate, UserResponse, UserListResponse, MessageResponse,
     FilterOptionsResponse, PreferencesUpdate, ReachOutRequest, ReachOutResponse,
-    ReportRequest, ReportResponse
+    ReportRequest, ReportResponse, ReachOutStatusResponse
 )
 from services.utils import assign_frontend_design
 from services.image_service import image_service
@@ -15,6 +17,20 @@ from config.auth_dependencies import get_current_user, get_current_active_user
 
 # Create router for user management routes
 router = APIRouter(prefix="/api", tags=["users"])
+
+# Daily reach out limit
+DAILY_REACH_OUT_LIMIT = 5
+
+def get_today_reach_out_count(db: Session, user_id: int) -> int:
+    """Get the count of reach outs sent by a user today"""
+    today_start = datetime.combine(date.today(), datetime.min.time())
+    count = db.query(ReachOut).filter(
+        and_(
+            ReachOut.sender_id == user_id,
+            ReachOut.created_at >= today_start
+        )
+    ).count()
+    return count
 
 # Get current user profile
 @router.get("/me", response_model=UserResponse)
@@ -235,6 +251,14 @@ async def send_reach_out(
             detail="You cannot reach out to yourself"
         )
     
+    # Check daily reach out limit
+    today_count = get_today_reach_out_count(db, current_user.id)
+    if today_count >= DAILY_REACH_OUT_LIMIT:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"You have reached your daily limit of {DAILY_REACH_OUT_LIMIT} reach outs. Please try again tomorrow."
+        )
+    
     try:
         # Send the email
         await send_reach_out_email(
@@ -244,9 +268,23 @@ async def send_reach_out(
             db=db
         )
         
+        # Track the reach out in database
+        reach_out_record = ReachOut(
+            sender_id=current_user.id,
+            recipient_id=recipient.id,
+            personal_message=reach_out_request.personal_message
+        )
+        db.add(reach_out_record)
+        db.commit()
+        
+        # Get updated count
+        updated_count = get_today_reach_out_count(db, current_user.id)
+        remaining = DAILY_REACH_OUT_LIMIT - updated_count
+        
         return ReachOutResponse(
             message=f"Reach out email sent successfully to {recipient.name or recipient.school_email}!",
-            email_sent=True
+            email_sent=True,
+            remaining_reach_outs=remaining
         )
     except Exception as e:
         raise HTTPException(
@@ -292,4 +330,22 @@ def report_user(
     return ReportResponse(
         message=f"Report submitted successfully. Thank you for helping keep Study Buddy safe.",
         report_id=report.id
+    )
+
+# Get reach out status for current user
+@router.get("/reach-out/status", response_model=ReachOutStatusResponse)
+def get_reach_out_status(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the current user's reach out status for today"""
+    today_count = get_today_reach_out_count(db, current_user.id)
+    remaining = DAILY_REACH_OUT_LIMIT - today_count
+    can_reach_out = remaining > 0
+    
+    return ReachOutStatusResponse(
+        today_count=today_count,
+        daily_limit=DAILY_REACH_OUT_LIMIT,
+        remaining=remaining,
+        can_reach_out=can_reach_out
     )

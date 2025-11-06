@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import collageUrl from "./assets/collage.jpg";
-import { reachOut, me, reportUser } from "./authService";
+import { reachOut, me, reportUser, getReachOutStatus } from "./authService";
 
 export default function UserProfileModal({ user, isOpen, onClose }) {
   const [showEmailPopup, setShowEmailPopup] = useState(false);
@@ -13,19 +13,31 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   const [reportStatus, setReportStatus] = useState(null);
+  const [reachOutStatus, setReachOutStatus] = useState(null);
 
-  // Load current user when modal opens
+  // Load current user and reach out status when modal opens
   useEffect(() => {
     if (isOpen) {
-      const loadCurrentUser = async () => {
+      const loadData = async () => {
         try {
-          const response = await me();
-          setCurrentUser(response.data);
+          const [userResponse, statusResponse] = await Promise.all([
+            me(),
+            getReachOutStatus()
+          ]);
+          setCurrentUser(userResponse.data);
+          setReachOutStatus(statusResponse.data);
         } catch (err) {
-          console.error('Failed to load current user:', err);
+          console.error('Failed to load data:', err);
+          // Still try to load user even if status fails
+          try {
+            const userResponse = await me();
+            setCurrentUser(userResponse.data);
+          } catch (userErr) {
+            console.error('Failed to load current user:', userErr);
+          }
         }
       };
-      loadCurrentUser();
+      loadData();
     }
   }, [isOpen]);
 
@@ -49,8 +61,27 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
     setErrorMessage("");
 
     try {
-      await reachOut(user.id, personalMessage || null);
+      const response = await reachOut(user.id, personalMessage || null);
       setSendStatus('success');
+      
+      // Update reach out status if provided in response
+      if (response.data?.remaining_reach_outs !== undefined) {
+        setReachOutStatus(prev => ({
+          ...prev,
+          today_count: (prev?.today_count || 0) + 1,
+          remaining: response.data.remaining_reach_outs,
+          can_reach_out: response.data.remaining_reach_outs > 0
+        }));
+      } else {
+        // Refresh status if not in response
+        try {
+          const statusResponse = await getReachOutStatus();
+          setReachOutStatus(statusResponse.data);
+        } catch (statusErr) {
+          console.error('Failed to refresh reach out status:', statusErr);
+        }
+      }
+      
       // Close popup after 2 seconds
       setTimeout(() => {
         setShowEmailPopup(false);
@@ -505,11 +536,18 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
 
         .modal-actions {
           display: flex;
+          flex-direction: column;
           gap: 10px;
           justify-content: center;
           margin-top: 16px;
           padding-top: 12px;
           border-top: 1px solid rgba(255,255,255,.1);
+        }
+        
+        .modal-actions-buttons {
+          display: flex;
+          gap: 10px;
+          justify-content: center;
         }
 
         .modal-btn {
@@ -830,17 +868,45 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
         </div>
 
         <div className="modal-actions">
-          <button className="modal-btn modal-btn-primary" onClick={handleReachOut}>
-            Reach Out
-          </button>
-          {currentUser && currentUser.id !== user.id && (
-            <button className="modal-btn modal-btn-danger" onClick={handleReportClick}>
-              ⚠️ Report
-            </button>
+          {reachOutStatus && (
+            <div style={{ 
+              fontSize: '12px', 
+              color: 'var(--muted)', 
+              textAlign: 'center',
+              marginBottom: '8px',
+              padding: '6px 12px',
+              background: reachOutStatus.can_reach_out ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)',
+              border: `1px solid ${reachOutStatus.can_reach_out ? 'rgba(40, 167, 69, 0.3)' : 'rgba(220, 53, 69, 0.3)'}`,
+              borderRadius: '6px'
+            }}>
+              {reachOutStatus.can_reach_out ? (
+                <>📧 {reachOutStatus.remaining} of {reachOutStatus.daily_limit} reach outs remaining today</>
+              ) : (
+                <>⚠️ Daily limit reached ({reachOutStatus.daily_limit}/{reachOutStatus.daily_limit}). Try again tomorrow!</>
+              )}
+            </div>
           )}
-          <button className="modal-btn modal-btn-secondary" onClick={onClose}>
-            Close
-          </button>
+          <div className="modal-actions-buttons">
+            <button 
+              className="modal-btn modal-btn-primary" 
+              onClick={handleReachOut}
+              disabled={reachOutStatus && !reachOutStatus.can_reach_out}
+              style={{
+                opacity: (reachOutStatus && !reachOutStatus.can_reach_out) ? 0.5 : 1,
+                cursor: (reachOutStatus && !reachOutStatus.can_reach_out) ? 'not-allowed' : 'pointer'
+              }}
+            >
+              Reach Out
+            </button>
+            {currentUser && currentUser.id !== user.id && (
+              <button className="modal-btn modal-btn-danger" onClick={handleReportClick}>
+                ⚠️ Report
+              </button>
+            )}
+            <button className="modal-btn modal-btn-secondary" onClick={onClose}>
+              Close
+            </button>
+          </div>
         </div>
       </div>
 
@@ -848,6 +914,24 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
         <div className="email-popup-overlay" onClick={closeEmailPopup}>
           <div className="email-popup" onClick={(e) => e.stopPropagation()}>
             <h3>✉️ Reach Out to {user.name || 'This Person'}</h3>
+            {reachOutStatus && (
+              <div style={{ 
+                marginBottom: '12px',
+                padding: '8px 12px',
+                background: reachOutStatus.can_reach_out ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)',
+                border: `1px solid ${reachOutStatus.can_reach_out ? 'rgba(40, 167, 69, 0.3)' : 'rgba(220, 53, 69, 0.3)'}`,
+                borderRadius: '6px',
+                fontSize: '13px',
+                color: reachOutStatus.can_reach_out ? '#28a745' : '#dc3545',
+                fontWeight: 600
+              }}>
+                {reachOutStatus.can_reach_out ? (
+                  <>📧 {reachOutStatus.remaining} of {reachOutStatus.daily_limit} reach outs remaining today</>
+                ) : (
+                  <>⚠️ You've reached your daily limit of {reachOutStatus.daily_limit} reach outs. Please try again tomorrow.</>
+                )}
+              </div>
+            )}
             <p style={{ color: 'var(--muted)', margin: '0 0 16px 0', fontSize: '14px' }}>
               Write a quick note (optional) and we'll send an email to {user.name || 'them'} with both of your profiles! You'll be CC'd on the email so you can continue the conversation.
             </p>
@@ -879,9 +963,13 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
               <button 
                 className="email-btn email-btn-primary" 
                 onClick={handleSendEmail}
-                disabled={isSending || !currentUser}
+                disabled={isSending || !currentUser || (reachOutStatus && !reachOutStatus.can_reach_out)}
+                style={{
+                  opacity: (reachOutStatus && !reachOutStatus.can_reach_out) ? 0.5 : 1,
+                  cursor: (reachOutStatus && !reachOutStatus.can_reach_out) ? 'not-allowed' : 'pointer'
+                }}
               >
-                {isSending ? '📤 Sending...' : '📧 Send Email'}
+                {isSending ? '📤 Sending...' : (reachOutStatus && !reachOutStatus.can_reach_out) ? '⚠️ Limit Reached' : '📧 Send Email'}
               </button>
               <button 
                 className="email-btn email-btn-secondary" 

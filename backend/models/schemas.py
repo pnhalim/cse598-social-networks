@@ -241,6 +241,13 @@ class ReachOutRequest(BaseModel):
 class ReachOutResponse(BaseModel):
     message: str
     email_sent: bool
+    remaining_reach_outs: Optional[int] = None
+
+class ReachOutStatusResponse(BaseModel):
+    today_count: int
+    daily_limit: int
+    remaining: int
+    can_reach_out: bool
 
 class ReportRequest(BaseModel):
     reported_user_id: int

@@ -51,3 +51,6 @@ export const reportUser = (reportedUserId, reason = null, context = null) =>
     reason: reason || null,
     context: context || null,
   });
+
+// Get reach out status
+export const getReachOutStatus = () => api.get("/api/reach-out/status");
