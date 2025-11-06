@@ -36,3 +36,10 @@ export const selectStudyBuddy = (selectedUserId) =>
 
 // Optional protected calls
 export const me = () => api.get("/api/me");
+
+// Reach out to another user
+export const reachOut = (recipientUserId, personalMessage) =>
+  api.post("/api/reach-out", {
+    recipient_user_id: recipientUserId,
+    personal_message: personalMessage || null,
+  });

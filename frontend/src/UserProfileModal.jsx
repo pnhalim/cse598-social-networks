@@ -1,29 +1,78 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import collageUrl from "./assets/collage.jpg";
+import { reachOut, me } from "./authService";
 
 export default function UserProfileModal({ user, isOpen, onClose }) {
   const [showEmailPopup, setShowEmailPopup] = useState(false);
   const [emailCopied, setEmailCopied] = useState(false);
+  const [personalMessage, setPersonalMessage] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isSending, setIsSending] = useState(false);
+  const [sendStatus, setSendStatus] = useState(null); // 'success' or 'error'
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Load current user when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const loadCurrentUser = async () => {
+        try {
+          const response = await me();
+          setCurrentUser(response.data);
+        } catch (err) {
+          console.error('Failed to load current user:', err);
+        }
+      };
+      loadCurrentUser();
+    }
+  }, [isOpen]);
 
   if (!isOpen || !user) return null;
 
   const handleReachOut = () => {
     setShowEmailPopup(true);
+    setPersonalMessage("");
+    setSendStatus(null);
+    setErrorMessage("");
   };
 
-  const handleCopyEmail = async () => {
+  const handleSendEmail = async () => {
+    if (!currentUser) {
+      setErrorMessage("Unable to load your profile. Please try again.");
+      return;
+    }
+
+    setIsSending(true);
+    setSendStatus(null);
+    setErrorMessage("");
+
     try {
-      await navigator.clipboard.writeText(user.school_email);
-      setEmailCopied(true);
-      setTimeout(() => setEmailCopied(false), 2000);
+      await reachOut(user.id, personalMessage || null);
+      setSendStatus('success');
+      // Close popup after 2 seconds
+      setTimeout(() => {
+        setShowEmailPopup(false);
+        setPersonalMessage("");
+        setSendStatus(null);
+      }, 2000);
     } catch (err) {
-      console.error('Failed to copy email:', err);
+      console.error('Failed to send email:', err);
+      setSendStatus('error');
+      setErrorMessage(
+        err.response?.data?.detail || 
+        err.message || 
+        "Failed to send email. Please try again."
+      );
+    } finally {
+      setIsSending(false);
     }
   };
 
   const closeEmailPopup = () => {
     setShowEmailPopup(false);
     setEmailCopied(false);
+    setPersonalMessage("");
+    setSendStatus(null);
+    setErrorMessage("");
   };
 
   const getGenderIcon = (gender) => {
@@ -477,13 +526,57 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
           border: 1px solid rgba(255,255,255,.2);
           border-radius: 16px;
           padding: 24px;
-          max-width: 400px;
+          max-width: 500px;
           width: 100%;
-          text-align: center;
+          text-align: left;
           backdrop-filter: blur(15px);
           color: var(--fg);
           font-family: var(--font);
           position: relative;
+        }
+        
+        .email-draft-textarea {
+          width: 100%;
+          min-height: 120px;
+          padding: 12px;
+          border-radius: 8px;
+          border: 1px solid rgba(255,255,255,.2);
+          background: rgba(255,255,255,.05);
+          color: var(--fg);
+          font-family: var(--font);
+          font-size: 14px;
+          resize: vertical;
+          margin: 16px 0;
+        }
+        
+        .email-draft-textarea:focus {
+          outline: none;
+          border-color: var(--maize);
+          background: rgba(255,255,255,.08);
+        }
+        
+        .email-draft-textarea::placeholder {
+          color: var(--muted);
+        }
+        
+        .status-message {
+          padding: 12px;
+          border-radius: 8px;
+          margin: 12px 0;
+          font-size: 14px;
+          font-weight: 600;
+        }
+        
+        .status-message.success {
+          background: rgba(40, 167, 69, 0.2);
+          border: 1px solid rgba(40, 167, 69, 0.4);
+          color: #28a745;
+        }
+        
+        .status-message.error {
+          background: rgba(220, 53, 69, 0.2);
+          border: 1px solid rgba(220, 53, 69, 0.4);
+          color: #dc3545;
         }
 
         .email-popup h3 {
@@ -691,27 +784,48 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
       {showEmailPopup && (
         <div className="email-popup-overlay" onClick={closeEmailPopup}>
           <div className="email-popup" onClick={(e) => e.stopPropagation()}>
-            {emailCopied && <div className="copy-success">Copied!</div>}
-            <h3>📧 Contact Information</h3>
-            <p style={{ color: 'var(--muted)', margin: '0 0 16px 0' }}>
-              Here's {user.name || 'this person'}'s email address:
+            <h3>✉️ Reach Out to {user.name || 'This Person'}</h3>
+            <p style={{ color: 'var(--muted)', margin: '0 0 16px 0', fontSize: '14px' }}>
+              Write a quick note (optional) and we'll send an email to {user.name || 'them'} with both of your profiles! You'll be CC'd on the email so you can continue the conversation.
             </p>
-            <div className="email-display">
-              {user.school_email || 'No email available'}
-            </div>
+            
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: 'var(--maize)', textTransform: 'uppercase' }}>
+              Your Message (Optional)
+            </label>
+            <textarea
+              className="email-draft-textarea"
+              placeholder="Hey! I'd love to study together. Let me know when you're free! 😊"
+              value={personalMessage}
+              onChange={(e) => setPersonalMessage(e.target.value)}
+              disabled={isSending}
+            />
+            
+            {sendStatus === 'success' && (
+              <div className="status-message success">
+                ✅ Email sent successfully! Check your inbox - you've been CC'd!
+              </div>
+            )}
+            
+            {sendStatus === 'error' && (
+              <div className="status-message error">
+                ❌ {errorMessage}
+              </div>
+            )}
+            
             <div className="email-actions">
               <button 
                 className="email-btn email-btn-primary" 
-                onClick={handleCopyEmail}
-                disabled={!user.school_email}
+                onClick={handleSendEmail}
+                disabled={isSending || !currentUser}
               >
-                📋 Copy Email
+                {isSending ? '📤 Sending...' : '📧 Send Email'}
               </button>
               <button 
                 className="email-btn email-btn-secondary" 
                 onClick={closeEmailPopup}
+                disabled={isSending}
               >
-                Close
+                Cancel
               </button>
             </div>
           </div>

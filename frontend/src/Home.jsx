@@ -35,8 +35,9 @@ export default function Home() {
 
   if (msg) return <p style={{ maxWidth: 480, margin: "2rem auto" }}>{msg}</p>;
 
-  // Show UserList for design1 users, otherwise show basic home page
-  if (user?.frontend_design === "design1") {
+  // All users use design1 (list view)
+  // Default to UserList if design is not set or is design1
+  if (!user?.frontend_design || user?.frontend_design === "design1") {
     return <UserList />;
   }
 
