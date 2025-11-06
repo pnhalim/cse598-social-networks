@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, func
 from core.database import get_db
-from models.models import User, UserSelection
+from models.models import User, UserSelection, StudySessionRating
 from models.schemas import (
     CursorPageParams,
     CursorPageResponse,
@@ -77,6 +77,17 @@ def list_users(
     limit = max(1, min(params.limit, 50))
     items = base_q.limit(limit + 1).all()
 
+    # Calculate average ratings for all users
+    user_ids = [u.id for u in items[:limit]]
+    rating_stats = db.query(
+        StudySessionRating.rated_user_id,
+        func.avg((StudySessionRating.rating_1 + StudySessionRating.rating_2 + StudySessionRating.rating_3) / 3.0).label('avg_rating')
+    ).filter(
+        StudySessionRating.rated_user_id.in_(user_ids)
+    ).group_by(StudySessionRating.rated_user_id).all()
+    
+    rating_dict = {user_id: float(avg) for user_id, avg in rating_stats}
+
     summaries = [
         ListUserSummary(
             id=u.id,
@@ -92,6 +103,8 @@ def list_users(
             favorite_study_spot=u.favorite_study_spot,
             mbti=u.mbti,
             yap_to_study_ratio=u.yap_to_study_ratio,
+            average_rating=rating_dict.get(u.id),
+            reputation_score=u.reputation_score,
         )
         for u in items[:limit]
     ]

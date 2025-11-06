@@ -484,6 +484,12 @@ const sortByOverlap = (list, mineSet) =>
           border: 1px solid rgba(255,107,53,.3);
         }
 
+        .rating-badge {
+          background: linear-gradient(135deg, rgba(76,175,80,.25), rgba(76,175,80,.15));
+          color: #4caf50;
+          border: 1px solid rgba(76,175,80,.4);
+        }
+
 
         .badge-icon {
           font-size: 12px;
@@ -913,6 +919,12 @@ const sortByOverlap = (list, mineSet) =>
                         <div className="profile-badge year-badge" title={`Year: ${user.academic_year}`}>
                           <span className="badge-icon">📅</span>
                           <span className="badge-text">{user.academic_year}</span>
+                        </div>
+                      )}
+                      {user.average_rating !== null && user.average_rating !== undefined && user.average_rating >= 4.0 && (
+                        <div className="profile-badge rating-badge" title={`Average Rating: ${user.average_rating.toFixed(1)}/5.0 (Threshold: 4.0)`}>
+                          <span className="badge-icon">⭐</span>
+                          <span className="badge-text">Trusted Study Buddy This Week</span>
                         </div>
                       )}
                     </div>

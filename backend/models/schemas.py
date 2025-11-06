@@ -220,6 +220,8 @@ class ListUserSummary(BaseModel):
     favorite_study_spot: Optional[str] = None
     mbti: Optional[str] = None
     yap_to_study_ratio: Optional[str] = None
+    average_rating: Optional[float] = None
+    reputation_score: Optional[int] = None
 
     class Config:
         from_attributes = True
