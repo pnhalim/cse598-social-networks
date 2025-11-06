@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ProfileButton from "./ProfileButton";
-import { getUsersList, selectStudyBuddy } from "./authService";
+import { me, getUsersList, selectStudyBuddy } from "./authService";
 import UserProfileModal from "./UserProfileModal";
 import { useSidebar } from "./SidebarContext";
 import collageUrl from "./assets/collage.jpg";
-import { me, getUsersList, selectStudyBuddy } from "./authService";
 
 export default function UserList() {
   const navigate = useNavigate();
