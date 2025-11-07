@@ -120,8 +120,12 @@ def custom_openapi():
         routes=app.routes,
     )
     
+    # Ensure components/securitySchemes keys exist
+    components = openapi_schema.setdefault("components", {})
+    security_schemes = components.setdefault("securitySchemes", {})
+
     # Add security schemes
-    openapi_schema["components"]["securitySchemes"] = {
+    security_schemes.update({
         "OAuth2PasswordBearer": {
             "type": "oauth2",
             "flows": {
@@ -132,7 +136,7 @@ def custom_openapi():
             },
             "description": "OAuth2 with Password Bearer token"
         }
-    }
+    })
     
     # Add security requirements to protected endpoints
     for path, path_item in openapi_schema["paths"].items():
