@@ -1,0 +1,49 @@
+# Python cache and virtual environments
+*.pyc
+__pycache__/
+venv/
+env/
+.venv/
+
+# Local database files (use PostgreSQL in production)
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files (use Vercel environment variables)
+.env
+.env.local
+.env.*.local
+
+# Development and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Development files
+node_modules/
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Test files
+*.test.js
+*.spec.js
+test/
+tests/
+
+# Build artifacts (will be generated)
+frontend/dist/
+frontend/.vite/
+

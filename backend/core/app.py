@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 from core.database import engine
 from models.models import Base
 from api.auth_routes import router as auth_router
@@ -42,9 +43,14 @@ app = FastAPI(
 )
 
 # Add CORS middleware
+# Get allowed origins from environment or default to all
+allowed_origins = os.getenv("CORS_ORIGINS", "*")
+if allowed_origins != "*":
+    allowed_origins = [origin.strip() for origin in allowed_origins.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your frontend domain
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

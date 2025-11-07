@@ -1,3 +1,5 @@
+# This file is used by Vercel to install Python dependencies
+# Copy of backend/requirements.txt for Vercel serverless functions
 aiosmtplib==2.0.2
 annotated-types==0.7.0
 anyio==3.7.1
@@ -40,3 +42,4 @@ Pillow==10.1.0
 better-profanity==0.7.0
 mangum==0.17.0
 psycopg2-binary==2.9.9
+

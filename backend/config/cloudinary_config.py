@@ -11,7 +11,8 @@ class CloudinaryConfig(BaseSettings):
     api_secret: str = ""
     
     class Config:
-        env_file = ".env"
+        env_file = [".env", "../.env"]  # Check current dir and project root
+        env_file_encoding = "utf-8"
         env_prefix = "CLOUDINARY_"
 
 # Create global instance

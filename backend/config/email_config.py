@@ -16,7 +16,8 @@ class EmailSettings(BaseSettings):
     secret_key: str = "your-super-secret-key-change-in-production"  # JWT secret key
     
     class Config:
-        env_file = ".env"
+        env_file = [".env", "../.env"]  # Check current dir and project root
+        env_file_encoding = "utf-8"
         extra = "ignore"  # Allow extra fields in .env file
 
 email_settings = EmailSettings()
