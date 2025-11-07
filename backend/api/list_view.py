@@ -13,7 +13,7 @@ from models.schemas import (
 from config.auth_dependencies import get_current_user
 from utils.similarity import sort_users_by_similarity
 
-router = APIRouter(prefix="/api", tags=["list view"]) 
+router = APIRouter(prefix="/api", tags=["design1 list view"]) 
 
 
 def _apply_user_preferences_query(db: Session, current_user: User):

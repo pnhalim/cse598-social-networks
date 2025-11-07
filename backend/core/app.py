@@ -7,15 +7,11 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Import database components
 try:
     from core.database import engine
     from models.models import Base
-    from api.auth_routes import router as auth_router
-    from api.user_routes import router as user_router
-    from api.general_routes import router as general_router
-    from api.mutual_matching_routes import router as mutual_matching_router
-    from api.list_view import router as list_view_router
-
+    
     # Create database tables (with error handling)
     if engine:
         try:
@@ -28,14 +24,44 @@ try:
     else:
         logger.warning("Database engine not available - tables will not be created. Set DATABASE_URL environment variable.")
 except Exception as e:
-    logger.error(f"Error importing modules: {e}", exc_info=True)
-    # Don't raise - let the app start so we can return proper error messages
-    # Set router variables to None so we can check later
-    auth_router = None
-    user_router = None
-    general_router = None
-    mutual_matching_router = None
-    list_view_router = None
+    logger.error(f"Error importing database modules: {e}", exc_info=True)
+
+# Import routers individually so one failure doesn't prevent others from loading
+auth_router = None
+user_router = None
+general_router = None
+mutual_matching_router = None
+list_view_router = None
+
+try:
+    from api.auth_routes import router as auth_router
+    logger.info("Successfully imported auth_router")
+except Exception as e:
+    logger.error(f"Error importing auth_router: {e}", exc_info=True)
+
+try:
+    from api.user_routes import router as user_router
+    logger.info("Successfully imported user_router")
+except Exception as e:
+    logger.error(f"Error importing user_router: {e}", exc_info=True)
+
+try:
+    from api.general_routes import router as general_router
+    logger.info("Successfully imported general_router")
+except Exception as e:
+    logger.error(f"Error importing general_router: {e}", exc_info=True)
+
+try:
+    from api.mutual_matching_routes import router as mutual_matching_router
+    logger.info("Successfully imported mutual_matching_router")
+except Exception as e:
+    logger.error(f"Error importing mutual_matching_router: {e}", exc_info=True)
+
+try:
+    from api.list_view import router as list_view_router
+    logger.info("Successfully imported list_view_router")
+except Exception as e:
+    logger.error(f"Error importing list_view_router: {e}", exc_info=True)
 
 # Create FastAPI app
 app = FastAPI(
