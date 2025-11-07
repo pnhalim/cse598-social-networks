@@ -1,21 +1,34 @@
 """
 Image upload and processing service using Cloudinary
 """
+import logging
+import io
+from typing import Optional
 
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
 from fastapi import HTTPException, UploadFile
 from PIL import Image
-import io
-import os
-from typing import Optional
+
+try:
+    import cloudinary
+    import cloudinary.uploader
+    import cloudinary.api
+    CLOUDINARY_AVAILABLE = True
+except ImportError:  # pragma: no cover - optional dependency may be missing
+    cloudinary = None  # type: ignore
+    CLOUDINARY_AVAILABLE = False
+
 from config.cloudinary_config import cloudinary_config
+
+logger = logging.getLogger(__name__)
 
 class ImageService:
     def __init__(self):
+        if not CLOUDINARY_AVAILABLE:
+            logger.warning("Cloudinary SDK not installed; image upload endpoints disabled")
+            return
+
         # Configure Cloudinary
-        cloudinary.config(
+        cloudinary.config(  # type: ignore[union-attr]
             cloud_name=cloudinary_config.cloud_name,
             api_key=cloudinary_config.api_key,
             api_secret=cloudinary_config.api_secret
@@ -41,6 +54,12 @@ class ImageService:
         Raises:
             HTTPException: If upload fails or file is invalid
         """
+        if not CLOUDINARY_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Cloudinary integration not configured on the server."
+            )
+
         try:
             # Validate file type
             if not self._is_valid_image(file):
@@ -98,6 +117,10 @@ class ImageService:
         Returns:
             bool: True if deletion was successful
         """
+        if not CLOUDINARY_AVAILABLE:
+            logger.warning("Cloudinary SDK not installed; delete_profile_picture no-op")
+            return False
+
         try:
             result = cloudinary.uploader.destroy(public_id)
             return result.get("result") == "ok"

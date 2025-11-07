@@ -3,9 +3,16 @@ Content moderation service for backend using better-profanity library
 Checks text input for inappropriate content using a comprehensive profanity detection library
 """
 
+import logging
 import re
 from typing import Dict, Tuple
-from better_profanity import profanity
+
+try:
+    from better_profanity import profanity
+except ImportError:  # pragma: no cover - optional dependency might be missing on some deployments
+    profanity = None
+
+logger = logging.getLogger(__name__)
 
 def check_censorship(text: str) -> Dict[str, any]:
     """
@@ -19,7 +26,11 @@ def check_censorship(text: str) -> Dict[str, any]:
     """
     if not text or not isinstance(text, str):
         return {'has_inappropriate_content': False, 'matched_words': []}
-    
+
+    if profanity is None:
+        logger.warning("better_profanity not installed; skipping profanity checks")
+        return {'has_inappropriate_content': False, 'matched_words': []}
+
     # Check if text contains profanity
     has_inappropriate_content = profanity.contains_profanity(text)
     
