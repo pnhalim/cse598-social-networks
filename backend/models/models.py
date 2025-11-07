@@ -1,3 +1,4 @@
+# backend/models/models.py
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, JSON, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -154,6 +155,10 @@ class StudySessionRating(Base):
     criterion_3 = Column(String(50), nullable=False)
     rating_3 = Column(Integer, nullable=False)
     
+    # reflection-style fields
+    met = Column(Boolean, nullable=True)               # did they actually meet?
+    would_meet_again = Column(Boolean, nullable=True)  # would you study with them again?
+
     # Optional reflection note
     reflection_note = Column(Text, nullable=True)
     
