@@ -10,7 +10,7 @@ export default function StudyBuddy() {
   const [resendMessage, setResendMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
-
+  const [showPassword, setShowPassword] = useState(false);
   const [showOverlay, setShowOverlay] = useState(true);
   const [overlayLeaving, setOverlayLeaving] = useState(false);
 
@@ -230,15 +230,49 @@ export default function StudyBuddy() {
 
         .form{ display:grid; gap:12px; margin-top:4px; }
         .label{ text-align:left; font-weight:700; color:#ced9e4; font-size:14px; }
-        .input{
-          width:100%;
-          padding:12px 12px;
-          border-radius:12px;
-          background:#0c1016;
-          border:1px solid #2a3442;
-          color:#eef5ff;
-          font-size:16px;
+        .input-wrap {
+          position: relative;
+          display: flex;
+          align-items: center;
         }
+
+        .input {
+          width: 100%;
+          padding: 12px 40px 12px 12px; /* make room for the eye on the right */
+          border-radius: 12px;
+          background: #0c1016;
+          border: 1px solid #2a3442;
+          color: #eef5ff;
+          font-size: 16px;
+        }
+
+        /* Eye button (no background, fully flat) */
+        .pw-toggle {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: #c8d3de;
+          padding: 0;
+          margin: 0;
+          cursor: pointer;
+          line-height: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .pw-toggle:hover {
+          color: #fff;
+        }
+
+        .pw-toggle:focus-visible {
+          outline: 2px solid var(--maize);
+          outline-offset: 2px;
+        }
+
         .btn{
           width:100%;
           padding:12px 14px;
@@ -434,15 +468,53 @@ export default function StudyBuddy() {
             {!isSignUp && (
               <>
                 <label className="label" htmlFor="password">Password</label>
+              <div className="input-wrap">
                 <input
                   id="password"
                   className="input"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+
+                <button
+                  type="button"
+                  className="pw-toggle"
+                  onClick={() => setShowPassword(v => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    // Eye off icon (hide)
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M17.94 17.94A10.94 10.94 0 0112 20c-5 0-9.27-3.11-11-8a10.93 10.93 0 012.06-3.33m3.17-2.56A10.94 10.94 0 0112 4c5 0 9.27 3.11 11 8a10.94 10.94 0 01-2.06 3.33M1 1l22 22"/>
+                    </svg>
+                  ) : (
+                    // Eye icon (show)
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
               </>
             )}
 
