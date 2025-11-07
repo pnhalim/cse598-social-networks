@@ -142,9 +142,30 @@ app = FastAPI(
 
 # Add CORS middleware
 # Get allowed origins from environment or default to all
-allowed_origins = os.getenv("CORS_ORIGINS", "*")
-if allowed_origins != "*":
-    allowed_origins = [origin.strip() for origin in allowed_origins.split(",")]
+cors_origins_env = os.getenv("CORS_ORIGINS", "*")
+frontend_url = os.getenv("VITE_FRONTEND_BASE_URL") or os.getenv("FRONTEND_BASE_URL") or "https://studybuddyumich.vercel.app"
+
+if cors_origins_env == "*":
+    # When CORS_ORIGINS is "*", we need to explicitly list origins if credentials are allowed
+    # Default to frontend URL and common development origins
+    allowed_origins = [
+        frontend_url,
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000"
+    ]
+else:
+    # Parse comma-separated origins and ensure frontend URL is included
+    allowed_origins = [origin.strip() for origin in cors_origins_env.split(",")]
+    # Always include the frontend URL if not already present
+    if frontend_url not in allowed_origins:
+        allowed_origins.append(frontend_url)
+    # Also include common localhost origins for development
+    if "http://localhost:5173" not in allowed_origins:
+        allowed_origins.append("http://localhost:5173")
+    if "http://localhost:3000" not in allowed_origins:
+        allowed_origins.append("http://localhost:3000")
 
 app.add_middleware(
     CORSMiddleware,
