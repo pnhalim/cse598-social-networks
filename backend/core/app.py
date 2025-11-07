@@ -263,6 +263,33 @@ def test_endpoint():
         "database_configured": db_configured
     }
 
+@app.get("/api/routes")
+def list_all_routes():
+    """List all available API routes"""
+    routes = []
+    for route in app.routes:
+        if hasattr(route, 'path') and hasattr(route, 'methods'):
+            for method in route.methods:
+                if method != 'HEAD':  # Skip HEAD, it's usually a duplicate of GET
+                    routes.append({
+                        "path": route.path,
+                        "method": method,
+                        "name": getattr(route, 'name', 'unnamed'),
+                        "tags": getattr(route, 'tags', [])
+                    })
+    
+    return {
+        "total_routes": len(routes),
+        "routes": sorted(routes, key=lambda x: (x["path"], x["method"])),
+        "routers_included": {
+            "auth_router": auth_router is not None,
+            "user_router": user_router is not None,
+            "general_router": general_router is not None,
+            "mutual_matching_router": mutual_matching_router is not None,
+            "list_view_router": list_view_router is not None,
+        }
+    }
+
 @app.get("/api/health/detailed")
 def detailed_health_check():
     """Detailed health check showing which routers and components are loaded with error details"""

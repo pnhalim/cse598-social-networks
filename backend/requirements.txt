@@ -38,5 +38,6 @@ websockets==15.0.1
 cloudinary==1.41.0
 Pillow==10.1.0
 better-profanity==0.7.0
+bcrypt==4.1.2
 mangum==0.17.0
 psycopg2-binary==2.9.9
