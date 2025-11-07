@@ -170,7 +170,7 @@ else:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_credentials=True,
+    allow_credentials=False,  # Not needed since we use JWT tokens, not cookies
     allow_methods=["*"],
     allow_headers=["*"],
 )
