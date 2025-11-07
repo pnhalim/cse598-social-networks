@@ -26,7 +26,9 @@ except Exception as e:
 
 ALGORITHM = "HS256"
 
-FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+# Get frontend URL from environment variable, with fallbacks
+# Check VITE_FRONTEND_BASE_URL first (common in Vite projects), then FRONTEND_BASE_URL
+FRONTEND_BASE_URL = os.getenv("VITE_FRONTEND_BASE_URL") or os.getenv("FRONTEND_BASE_URL") or "https://studybuddyumich.vercel.app"
 
 def generate_verification_code() -> str:
     """Generate a 6-digit verification code"""
