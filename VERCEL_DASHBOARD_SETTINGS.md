@@ -50,7 +50,7 @@ Most settings should be **auto-detected** from `vercel.json`, but verify:
 
 **Required Variables:**
 
-1. **`DATABASE_URL`** (if not using Vercel Postgres)
+1. **`DATABASE_URL`** (if not using Neon Postgres)
    - PostgreSQL connection string
    - Format: `postgresql://user:password@host:port/database`
    - **Important**: Cannot use SQLite on Vercel!
@@ -88,13 +88,18 @@ The `vercel.json` already configures:
 
 ### Storage (Database)
 
-**If using Vercel Postgres:**
+**If using Neon Postgres (Vercel's integrated provider):**
 
 1. Go to **Storage** tab
-2. Click **Create Database** → **Postgres**
-3. Choose a plan (Hobby plan is free)
-4. `DATABASE_URL` will be automatically set as an environment variable
-5. No manual configuration needed!
+2. Click **Create Database**
+3. Select **Neon** (Vercel's integrated Postgres provider)
+4. Follow the prompts to create your database
+5. `DATABASE_URL` will be automatically set as an environment variable
+6. No manual configuration needed!
+
+**If Neon doesn't appear:**
+- Install the Neon integration from the [Vercel Marketplace](https://vercel.com/marketplace)
+- Or check your account settings for available integrations
 
 ## Recommended Settings Summary
 
@@ -119,7 +124,7 @@ The `vercel.json` already configures:
 Before deploying, ensure:
 
 - [ ] All environment variables are set in Vercel dashboard
-- [ ] PostgreSQL database is configured (Vercel Postgres or external)
+- [ ] PostgreSQL database is configured (Neon Postgres or external)
 - [ ] `DATABASE_URL` is set (not SQLite!)
 - [ ] `SECRET_KEY` is set with a secure random value
 - [ ] Email credentials are configured
@@ -142,6 +147,7 @@ Before deploying, ensure:
 2. **Verify `DATABASE_URL`** - Must be PostgreSQL, not SQLite
 3. **Check environment variables** - All required vars must be set
 4. **Verify database connection** - Test PostgreSQL connection
+5. **If using Neon** - Check that Neon integration is properly connected
 
 ### Frontend Works but API Doesn't
 

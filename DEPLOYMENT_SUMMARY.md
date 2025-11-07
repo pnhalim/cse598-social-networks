@@ -58,9 +58,11 @@ Your Study Buddy application has been configured to deploy both frontend and bac
 
 ### 1. Set Up Database
 
-**Option A: Vercel Postgres (Recommended)**
-- In Vercel dashboard: **Storage** → **Create Database** → **Postgres**
+**Option A: Neon Postgres (Recommended - Integrated with Vercel)**
+- In Vercel dashboard: **Storage** → **Create Database** → **Neon**
+- Vercel uses Neon as its integrated Postgres provider
 - `DATABASE_URL` will be automatically configured
+- If Neon doesn't appear, install from Vercel Marketplace
 
 **Option B: External PostgreSQL**
 - Set `DATABASE_URL` environment variable in Vercel
@@ -76,7 +78,7 @@ Your Study Buddy application has been configured to deploy both frontend and bac
 In Vercel Dashboard → Settings → Environment Variables, add:
 
 **Required:**
-- `DATABASE_URL` (if not using Vercel Postgres)
+- `DATABASE_URL` (if not using Neon Postgres)
 - `SECRET_KEY` (generate with: `python -c "import secrets; print(secrets.token_urlsafe(32))"`)
 
 **Email Configuration:**
@@ -142,7 +144,8 @@ Or connect your GitHub repository and push to trigger automatic deployments.
    - Output Directory: Auto-configured via `vercel.json`
 
 3. **Database** (Storage tab)
-   - Create Vercel Postgres database if using Option A
+   - Create Neon Postgres database if using Option A
+   - Install Neon integration from Marketplace if needed
 
 ## 📚 Documentation
 

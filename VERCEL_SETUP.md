@@ -13,16 +13,23 @@ This guide explains how to deploy the Study Buddy application to Vercel with bot
 
 **Important**: SQLite won't work on Vercel's serverless platform. You need to use PostgreSQL.
 
-### Option 1: Vercel Postgres (Recommended)
+### Option 1: Neon Postgres (Recommended - Integrated with Vercel)
+
+Vercel uses **Neon** as its integrated Postgres provider:
 
 1. In your Vercel project dashboard, go to **Storage** → **Create Database**
-2. Select **Postgres**
-3. Create a new database
-4. The `DATABASE_URL` environment variable will be automatically set
+2. You'll see options like **Neon** or **Supabase**
+3. Select **Neon** (Vercel's integrated Postgres provider)
+4. Follow the prompts to create your database
+5. The `DATABASE_URL` environment variable will be automatically set
+
+**If Neon doesn't appear:**
+- Install the Neon integration from the [Vercel Marketplace](https://vercel.com/marketplace)
+- Or go to your Vercel account settings and enable Neon integration
 
 ### Option 2: External PostgreSQL
 
-Use any PostgreSQL provider (Supabase, Neon, Railway, etc.) and set the `DATABASE_URL` environment variable.
+Use any PostgreSQL provider (Supabase, Railway, Render, etc.) and set the `DATABASE_URL` environment variable manually.
 
 ## Deployment Steps
 
@@ -40,12 +47,18 @@ vercel login
 
 ### Step 3: Set Up Database
 
-**If using Vercel Postgres:**
-1. In Vercel dashboard, go to **Storage** → **Create Database** → **Postgres**
-2. Create database (the `DATABASE_URL` will be auto-configured)
+**Option A: Neon Postgres (Recommended - Integrated with Vercel)**
+1. In Vercel dashboard, go to **Storage** → **Create Database**
+2. You'll see options like **Neon** or **Supabase**
+3. Select **Neon** (Vercel's integrated Postgres provider)
+4. Follow the prompts to create your database
+5. The `DATABASE_URL` will be automatically configured as an environment variable
 
-**If using external PostgreSQL:**
-- Set `DATABASE_URL` environment variable (see Step 4)
+**Option B: External PostgreSQL**
+- Use any PostgreSQL provider (Supabase, Railway, Render, etc.)
+- Set `DATABASE_URL` environment variable manually (see Step 4)
+
+**Note:** Vercel has transitioned to using Neon for Postgres databases. If you don't see Neon in the Storage tab, you may need to install the Neon integration from the Vercel Marketplace first.
 
 ### Step 4: Configure Environment Variables
 
@@ -58,10 +71,10 @@ In the Vercel dashboard (or via CLI), set the following environment variables:
 
 #### Required Environment Variables:
 
-1. **`DATABASE_URL`** (if not using Vercel Postgres)
+1. **`DATABASE_URL`** (if not using Neon Postgres)
    - **Value**: Your PostgreSQL connection string
    - **Format**: `postgresql://user:password@host:port/database`
-   - **Note**: If using Vercel Postgres, this is set automatically
+   - **Note**: If using Neon Postgres through Vercel Storage, this is set automatically
 
 2. **`SECRET_KEY`**
    - **Value**: A secure random string for JWT token signing
