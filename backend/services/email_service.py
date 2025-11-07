@@ -176,3 +176,28 @@ async def send_reach_out_email(
     await fm.send_message(message, template_name="reach_out.html")
     
     return True
+
+async def send_password_reset_email(user_email: str, user_name: str, user_id: int, db: Session, base_url: str = "http://localhost:8001"):
+    reset_code = generate_verification_code()
+    store_verification_code(db, reset_code, user_id, "reset")
+
+    reset_url = f"{FRONTEND_BASE_URL}/reset-password/{reset_code}"
+
+    # If you have a template, swap template_name + template_body.
+    message = MessageSchema(
+        subject="Reset your Study Buddy password",
+        recipients=[user_email],
+        subtype="html",
+        body=f"""
+        <div style="font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;">
+          <p>Hi {user_name or "there"},</p>
+          <p>We received a request to reset your password.</p>
+          <p><a href="{reset_url}">Click here to reset your password</a></p>
+          <p>If you didn’t request this, you can ignore this email.</p>
+          <p>— Study Buddy</p>
+        </div>
+        """
+    )
+    fm = FastMail(conf)
+    await fm.send_message(message)
+    return True

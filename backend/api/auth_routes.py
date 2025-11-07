@@ -7,7 +7,7 @@ from models.schemas import (
     ProfileSetup, ProfileSetupResponse, LoginRequest, LoginResponse
 )
 from services.utils import assign_frontend_design
-from services.email_service import send_verification_email, verify_token, get_verification_code_data, create_verification_token
+from services.email_service import send_verification_email, send_password_reset_email, verify_token, get_verification_code_data, create_verification_token
 from services.auth_utils import hash_password, verify_password, create_access_token
 from services.censorship_service import validate_text_input
 
@@ -517,3 +517,51 @@ def reject_email_token(token: str, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+# NEW: request password reset
+@router.post("/request-password-reset", response_model=EmailRequestResponse, status_code=status.HTTP_200_OK)
+async def request_password_reset(email_request: EmailRequest, request: Request, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.school_email == email_request.school_email).first()
+    if not user:
+        # Don’t leak which emails exist
+        return EmailRequestResponse(message="If an account exists, you'll receive a reset email shortly.", email_sent=True)
+
+    if user.email_verified is not True:
+        raise HTTPException(status_code=400, detail="Email not verified yet. Please verify first.")
+
+    # send reset email (short code flow)
+    base_url = f"{request.url.scheme}://{request.url.netloc}"
+    try:
+        await send_password_reset_email(user_email=user.school_email, user_name=user.name or "Study Buddy",
+                                        user_id=user.id, db=db, base_url=base_url)
+        return EmailRequestResponse(message="If an account exists, you'll receive a reset email shortly.", email_sent=True)
+    except Exception as e:
+        print("Failed to send password reset:", e)
+        raise HTTPException(status_code=500, detail="Failed to send password reset email.")
+
+# NEW: complete password reset using the short code from email
+@router.post("/reset-password/{code}", response_model=PasswordSetupResponse, status_code=status.HTTP_200_OK)
+def reset_password(code: str, password_data: PasswordSetup, db: Session = Depends(get_db)):
+    code_data = get_verification_code_data(db, code)  # validates/marks used
+    if not code_data:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset code")
+
+    if code_data["action"] != "reset":
+        raise HTTPException(status_code=400, detail="Invalid code action")
+
+    user = db.query(User).filter(User.id == code_data["user_id"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.email_verified is not True:
+        raise HTTPException(status_code=400, detail="Email not verified yet")
+
+    # update password
+    user.password_hash = hash_password(password_data.password)
+    db.commit()
+
+    access_token = create_access_token(data={"user_id": user.id})
+    return PasswordSetupResponse(
+        message="Password reset successfully. You are now logged in!",
+        user_id=user.id,
+        access_token=access_token
+    )

@@ -8,7 +8,7 @@ import Profile from "./Profile.jsx";
 import Home from "./Home.jsx";
 import Connections from "./Connections.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
-
+import ResetPassword from "./ResetPassword.jsx"; 
 export default function App() {
   return (
     <BrowserRouter>
@@ -17,6 +17,7 @@ export default function App() {
         <Route path="/verify-email/:code" element={<VerifyEmail />} />
         <Route path="/set-password/:token" element={<SetPassword />} />
         <Route path="/complete-profile/:user_id" element={<CompleteProfile />} />
+        <Route path="/reset-password/:code" element={<ResetPassword />} />
         <Route
            path="/profile"
            element={

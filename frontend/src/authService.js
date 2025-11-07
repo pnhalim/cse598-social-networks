@@ -84,3 +84,12 @@ export const getUserNotes = () => api.get("/api/notes");
 // Update user profile
 export const updateUserProfile = (userData) =>
   api.put("/api/user/update", userData);
+
+export const requestPasswordReset = (email) =>
+  api.post("/api/request-password-reset", { school_email: email.trim() });
+
+export const resetPassword = (code, password, confirm) =>
+  api.post(`/api/reset-password/${code}`, {
+    password,
+    confirm_password: confirm,
+  });
