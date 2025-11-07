@@ -35,6 +35,11 @@ class User(Base):
     match_by_gender = Column(Boolean, default=False)
     match_by_major = Column(Boolean, default=False)
     match_by_academic_year = Column(Boolean, default=False)
+    match_by_study_preferences = Column(Boolean, default=False)  # For similar study preferences (learn_best_when, study_snack, favorite_study_spot, mbti, yap_to_study_ratio)
+    match_by_classes = Column(Boolean, default=False)  # For similar classes (classes_taking, classes_taken)
+    
+    # Onboarding tracking
+    onboarding_completed = Column(Boolean, default=False)  # Track if user has completed onboarding with preferences
     
     # Reputation system
     reputation_score = Column(Integer, default=0)  # Starts at 0, can go negative

@@ -55,6 +55,16 @@ async def request_email_verification(email_request: EmailRequest, request: Reque
             message="Verification email sent successfully. Please check your email to continue.",
             email_sent=True
         )
+    except ValueError as e:
+        # Handle code generation/storage errors
+        # If email fails, delete the user record
+        db.delete(db_user)
+        db.commit()
+        print(f"Failed to generate/store verification code: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create verification code: {str(e)}. Please try again."
+        )
     except Exception as e:
         # If email fails, delete the user record
         db.delete(db_user)
@@ -68,7 +78,7 @@ async def request_email_verification(email_request: EmailRequest, request: Reque
 # Resend verification email for unverified users
 @router.post("/resend-verification", response_model=EmailRequestResponse, status_code=status.HTTP_200_OK)
 async def resend_verification_email(email_request: EmailRequest, request: Request, db: Session = Depends(get_db)):
-    """Resend verification email for unverified users"""
+    """Resend verification email for users who haven't completed setup"""
     
     # Check if user exists
     existing_user = db.query(User).filter(User.school_email == email_request.school_email).first()
@@ -78,19 +88,15 @@ async def resend_verification_email(email_request: EmailRequest, request: Reques
             detail="No account found with this email address"
         )
     
-    # Check if email is already verified
-    if existing_user.email_verified is True:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email is already verified"
-        )
-    
     # Check if user has a password (means they completed the flow)
     if existing_user.password_hash is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Account setup is already complete"
+            detail="Account setup is already complete. Please log in instead."
         )
+    
+    # Allow resending even if email is verified, as long as password isn't set
+    # This helps users who verified but lost the email or need a new code
     
     # Send new verification email
     try:
@@ -109,6 +115,13 @@ async def resend_verification_email(email_request: EmailRequest, request: Reques
         return EmailRequestResponse(
             message="New verification email sent successfully. Please check your email to continue.",
             email_sent=True
+        )
+    except ValueError as e:
+        # Handle code generation/storage errors
+        print(f"Failed to generate/store verification code: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create verification code: {str(e)}. Please try again."
         )
     except Exception as e:
         print(f"Failed to resend verification email: {e}")
@@ -371,16 +384,34 @@ def login_for_access_token(
 def exchange_verification_code(code: str, db: Session = Depends(get_db)):
     """Exchange verification code for JWT token"""
     try:
+        # Normalize code (strip whitespace, ensure it's a string)
+        code = str(code).strip()
+        print(f"DEBUG: Attempting to verify code: '{code}'")
+        
         # Get code data (this marks the code as used - one-time use)
-        code_data = get_verification_code_data(db, code)
+        # Pass check_user_verified=True to make this idempotent (handle duplicate requests)
+        try:
+            code_data = get_verification_code_data(db, code, check_user_verified=True)
+        except ValueError as ve:
+            # Database error during code verification
+            print(f"ERROR: ValueError in get_verification_code_data: {ve}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Database error while verifying code: {str(ve)}"
+            )
+        
         if not code_data:
+            print(f"DEBUG: Code '{code}' validation failed - returning 400")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid or expired verification code"
+                detail="Invalid or expired verification code. Please check that you're using the correct code from your email."
             )
         
         user_id = code_data["user_id"]
         action = code_data["action"]
+        already_verified = code_data.get("already_verified", False)
+        
+        print(f"DEBUG: Code validated successfully for user_id={user_id}, action={action}, already_verified={already_verified}")
         
         if action != "verify":
             raise HTTPException(
@@ -396,13 +427,26 @@ def exchange_verification_code(code: str, db: Session = Depends(get_db)):
                 detail="User not found"
             )
         
-        # Mark as verified
-        user.email_verified = True
-        db.commit()
-        db.refresh(user)
+        # Only mark as verified if not already verified (idempotent operation)
+        if not already_verified and not user.email_verified:
+            user.email_verified = True
+            try:
+                db.commit()
+                db.refresh(user)
+            except Exception as commit_error:
+                db.rollback()
+                print(f"ERROR: Failed to commit email verification: {commit_error}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Database error while updating user: {str(commit_error)}"
+                )
+        elif already_verified:
+            print(f"DEBUG: User {user_id} already verified - skipping verification step")
         
         # Create JWT token for the user
         jwt_token = create_verification_token(user_id, "verify")
+        
+        print(f"DEBUG: Email verification successful for user_id={user_id}")
         
         return {
             "message": "Email verified successfully! Please set your password to continue.",
@@ -413,9 +457,12 @@ def exchange_verification_code(code: str, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
+        print(f"ERROR: Unexpected exception in exchange_verification_code: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to verify code"
+            detail=f"Failed to verify code: {str(e)}"
         )
 
 # Email verification endpoints (legacy - keeping for backward compatibility)

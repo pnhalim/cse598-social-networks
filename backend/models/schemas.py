@@ -50,6 +50,12 @@ class ProfileSetup(BaseModel):
     favorite_study_spot: Optional[str] = None
     mbti: Optional[str] = None
     yap_to_study_ratio: Optional[str] = None
+    # Preference flags (optional, can be set during onboarding)
+    match_by_gender: Optional[bool] = None
+    match_by_major: Optional[bool] = None
+    match_by_academic_year: Optional[bool] = None
+    match_by_study_preferences: Optional[bool] = None
+    match_by_classes: Optional[bool] = None
 
 # Legacy schemas for backward compatibility
 class UserBase(BaseModel):
@@ -101,6 +107,10 @@ class UserResponse(UserBase):
     match_by_gender: Optional[bool] = None
     match_by_major: Optional[bool] = None
     match_by_academic_year: Optional[bool] = None
+    match_by_study_preferences: Optional[bool] = None
+    match_by_classes: Optional[bool] = None
+    # Onboarding tracking
+    onboarding_completed: Optional[bool] = None
     # Reputation system
     reputation_score: Optional[int] = None
     trusted_badge_this_week: Optional[bool] = None
@@ -172,6 +182,8 @@ class PreferencesUpdate(BaseModel):
     match_by_gender: Optional[bool] = None
     match_by_major: Optional[bool] = None
     match_by_academic_year: Optional[bool] = None
+    match_by_study_preferences: Optional[bool] = None
+    match_by_classes: Optional[bool] = None
 
 # Mutual matching schemas
 class ApprovalRequest(BaseModel):

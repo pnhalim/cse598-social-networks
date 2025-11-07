@@ -1,11 +1,12 @@
 from fastapi_mail import FastMail, MessageSchema
 from config.email_config import conf, email_settings
 from jose import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 import secrets
 import string
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from models.models import VerificationCode
 
 # Secret key for JWT tokens (in production, use a secure random key)
@@ -18,40 +19,118 @@ def generate_verification_code() -> str:
     """Generate a 6-digit verification code"""
     return ''.join(secrets.choice(string.digits) for _ in range(6))
 
+def generate_unique_verification_code(db: Session, max_attempts: int = 10) -> str:
+    """Generate a unique verification code, retrying if collision occurs"""
+    for attempt in range(max_attempts):
+        code = generate_verification_code()
+        # Check if code already exists
+        existing = db.query(VerificationCode).filter(
+            VerificationCode.code == code,
+            VerificationCode.used == False,
+            VerificationCode.expires_at > datetime.now(timezone.utc)
+        ).first()
+        if not existing:
+            return code
+    # If we've exhausted attempts, raise an error
+    raise ValueError("Failed to generate unique verification code after multiple attempts")
+
 def store_verification_code(db: Session, code: str, user_id: int, action: str) -> None:
     """Store verification code in database with expiration"""
-    expires_at = datetime.utcnow() + timedelta(hours=24)  # 24 hour expiration
+    # Use timezone-aware datetime for consistency
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)  # 24 hour expiration
     
-    db_code = VerificationCode(
-        code=code,
-        user_id=user_id,
-        action=action,
-        expires_at=expires_at
-    )
-    
-    db.add(db_code)
-    db.commit()
-
-def get_verification_code_data(db: Session, code: str) -> dict:
-    """Get verification code data and mark as used (one-time use)"""
-    db_code = db.query(VerificationCode).filter(
-        VerificationCode.code == code,
-        VerificationCode.used == False,
-        VerificationCode.expires_at > datetime.utcnow()
-    ).first()
-    
-    if db_code:
-        # Mark as used
-        db_code.used = True
+    try:
+        db_code = VerificationCode(
+            code=code,
+            user_id=user_id,
+            action=action,
+            expires_at=expires_at
+        )
+        
+        db.add(db_code)
         db.commit()
+    except IntegrityError:
+        # Code already exists (unique constraint violation)
+        # This is rare but possible with 6-digit codes
+        db.rollback()
+        raise ValueError(f"Code collision detected. Please try again.")
+    except Exception as e:
+        db.rollback()
+        raise ValueError(f"Failed to store verification code: {str(e)}")
+
+def get_verification_code_data(db: Session, code: str, check_user_verified: bool = False) -> dict:
+    """Get verification code data and mark as used (one-time use)
+    
+    Args:
+        db: Database session
+        code: Verification code
+        check_user_verified: If True, check if user is already verified and return success even if code is used
+    """
+    try:
+        # Use timezone-aware datetime for comparison
+        now = datetime.now(timezone.utc)
+        
+        # First, try to find the code (check all codes, not just unused ones, for debugging)
+        db_code = db.query(VerificationCode).filter(
+            VerificationCode.code == code
+        ).first()
+        
+        if not db_code:
+            # Code doesn't exist at all
+            print(f"DEBUG: Verification code '{code}' not found in database")
+            return None
+        
+        # If code is already used, check if user is already verified (idempotent operation)
+        if db_code.used:
+            if check_user_verified:
+                # Check if the user associated with this code is already verified
+                from models.models import User
+                user = db.query(User).filter(User.id == db_code.user_id).first()
+                if user and user.email_verified:
+                    print(f"DEBUG: Verification code '{code}' already used, but user {db_code.user_id} is already verified - returning success")
+                    return {
+                        "user_id": db_code.user_id,
+                        "action": db_code.action,
+                        "created_at": db_code.created_at,
+                        "already_verified": True
+                    }
+            print(f"DEBUG: Verification code '{code}' has already been used")
+            return None
+        
+        # Check if code is expired
+        # Normalize expires_at to timezone-aware (SQLite may return naive datetimes)
+        expires_at = db_code.expires_at
+        if expires_at.tzinfo is None:
+            # If timezone-naive, assume it's UTC
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        
+        if expires_at <= now:
+            print(f"DEBUG: Verification code '{code}' has expired. Expires at: {expires_at}, Now: {now}")
+            return None
+        
+        # Code is valid - mark as used
+        db_code.used = True
+        try:
+            db.commit()
+        except Exception as commit_error:
+            db.rollback()
+            print(f"ERROR: Failed to commit verification code usage: {commit_error}")
+            raise ValueError(f"Database error while marking code as used: {str(commit_error)}")
         
         return {
             "user_id": db_code.user_id,
             "action": db_code.action,
-            "created_at": db_code.created_at
+            "created_at": db_code.created_at,
+            "already_verified": False
         }
-    
-    return None
+    except ValueError:
+        # Re-raise ValueError so it can be handled upstream
+        raise
+    except Exception as e:
+        # Catch any other database errors
+        print(f"ERROR: Unexpected error in get_verification_code_data: {type(e).__name__}: {str(e)}")
+        db.rollback()
+        raise ValueError(f"Database error while verifying code: {str(e)}")
 
 def create_verification_token(user_id: int, action: str) -> str:
     """Create a JWT token for email verification (no expiration)"""
@@ -74,13 +153,31 @@ def verify_token(token: str) -> dict:
 async def send_verification_email(user_email: str, user_name: str, user_major: str, user_academic_year: str, user_id: int, db: Session, base_url: str = "http://localhost:8001"):
     """Send verification email to user"""
     
-    # Generate short verification codes
-    verify_code = generate_verification_code()
-    reject_code = generate_verification_code()
+    # Generate unique verification codes (with retry logic for collisions)
+    verify_code = generate_unique_verification_code(db)
+    reject_code = generate_unique_verification_code(db)
     
-    # Store codes with user data in database
-    store_verification_code(db, verify_code, user_id, "verify")
-    store_verification_code(db, reject_code, user_id, "reject")
+    # Invalidate old unused codes for this user to avoid confusion
+    # Note: We use SQLAlchemy filter which handles timezone comparison at DB level
+    now = datetime.now(timezone.utc)
+    old_codes = db.query(VerificationCode).filter(
+        VerificationCode.user_id == user_id,
+        VerificationCode.used == False,
+        VerificationCode.expires_at > now
+    ).all()
+    for old_code in old_codes:
+        old_code.used = True  # Mark old codes as used
+    if old_codes:
+        db.commit()
+    
+    # Store new codes with user data in database
+    try:
+        store_verification_code(db, verify_code, user_id, "verify")
+        store_verification_code(db, reject_code, user_id, "reject")
+    except ValueError as e:
+        # If storing fails, rollback the old code invalidation
+        db.rollback()
+        raise ValueError(f"Failed to create verification codes: {str(e)}")
     
     # Create JWT tokens for API responses (not for URLs)
     verify_token_str = create_verification_token(user_id, "verify")

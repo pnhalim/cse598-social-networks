@@ -1,10 +1,13 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSidebar } from "./SidebarContext";
+import { useState, useEffect } from "react";
+import { getConnections } from "./authService";
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isOpen, toggleSidebar } = useSidebar();
+  const [hasPendingConnections, setHasPendingConnections] = useState(false);
 
   const isActive = (path) => {
     if (path === "/home" || path === "/") {
@@ -17,6 +20,76 @@ export default function Sidebar() {
     localStorage.removeItem("jwt");
     navigate("/", { replace: true });
   };
+
+  // Check for pending connections (haven't rated or haven't said if they met)
+  useEffect(() => {
+    const checkPendingConnections = async () => {
+      try {
+        const response = await getConnections();
+        const connections = response.data;
+        
+        // Check if there are any connections that need attention:
+        // 1. met === null (haven't indicated if they met)
+        // 2. met === true && !has_rating (met but haven't rated)
+        const allConnections = [
+          ...(connections.reached_out_to || []),
+          ...(connections.reached_out_by || [])
+        ];
+        
+        const pendingConnections = allConnections.filter(conn => 
+          conn.met === null || (conn.met === true && !conn.has_rating)
+        );
+        
+        const hasPending = pendingConnections.length > 0;
+        
+        console.log("Pending connections check:", {
+          totalConnections: allConnections.length,
+          hasPending,
+          pendingCount: pendingConnections.length,
+          allConnections: allConnections.map(c => ({
+            id: c.id,
+            name: c.name || c.school_email,
+            met: c.met,
+            has_rating: c.has_rating,
+            isPending: c.met === null || (c.met === true && !c.has_rating)
+          })),
+          pendingConnections: pendingConnections.map(c => ({
+            id: c.id,
+            name: c.name || c.school_email,
+            met: c.met,
+            has_rating: c.has_rating
+          }))
+        });
+        
+        console.log("Setting hasPendingConnections to:", hasPending);
+        setHasPendingConnections(hasPending);
+      } catch (err) {
+        // Silently fail - don't show notification if we can't check
+        console.error("Error checking pending connections:", err);
+        setHasPendingConnections(false);
+      }
+    };
+
+    // Check immediately
+    checkPendingConnections();
+    
+    // Check more frequently when on connections page, otherwise every 30 seconds
+    const intervalTime = location.pathname === "/connections" ? 5000 : 30000;
+    const interval = setInterval(checkPendingConnections, intervalTime);
+    
+    // Also listen for storage events (in case connections are updated in another tab/window)
+    const handleStorageChange = () => {
+      checkPendingConnections();
+    };
+    window.addEventListener('focus', checkPendingConnections);
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', checkPendingConnections);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [location.pathname]); // Re-check when navigating
 
   return (
     <>
@@ -125,6 +198,7 @@ export default function Sidebar() {
           justify-content: ${isOpen ? 'flex-start' : 'center'};
           font-family: var(--font);
           position: relative;
+          overflow: visible;
         }
 
         .nav-item:hover {
@@ -143,6 +217,8 @@ export default function Sidebar() {
           width: ${isOpen ? '24px' : '100%'};
           text-align: center;
           flex-shrink: 0;
+          position: relative;
+          overflow: visible;
         }
 
         .nav-item span:not(.nav-icon) {
@@ -151,6 +227,36 @@ export default function Sidebar() {
           overflow: hidden;
           white-space: nowrap;
           transition: opacity 0.3s ease, width 0.3s ease;
+        }
+
+        .notification-badge {
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          width: 6px;
+          height: 6px;
+          background: var(--maize);
+          border: 1px solid rgba(0, 0, 0, 0.3);
+          border-radius: 50%;
+          box-shadow: 0 0 4px rgba(255, 205, 0, 1), 
+                      0 0 8px rgba(255, 205, 0, 0.6);
+          animation: pulse 2s ease-in-out infinite;
+          z-index: 100;
+          display: block !important;
+          pointer-events: none;
+          min-width: 6px;
+          min-height: 6px;
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.7;
+            transform: scale(1.1);
+          }
         }
 
         .sidebar-footer {
@@ -295,7 +401,20 @@ export default function Sidebar() {
             }}
             title={!isOpen ? "My Connections" : ""}
           >
-            <span className="nav-icon">👥</span>
+            <span className="nav-icon" style={{ position: 'relative' }}>
+              👥
+              {hasPendingConnections && location.pathname !== "/connections" && (
+                <span 
+                  className="notification-badge"
+                  style={{ 
+                    display: 'block',
+                    position: 'absolute',
+                    top: '-4px',
+                    right: '-4px'
+                  }}
+                ></span>
+              )}
+            </span>
             <span>My Connections</span>
           </button>
 

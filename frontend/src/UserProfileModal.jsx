@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { reachOut, me, reportUser, getReachOutStatus } from "./authService";
 import { validateTextInput } from "./censorshipUtils";
+import { useSidebar } from "./SidebarContext";
 
 export default function UserProfileModal({ user, isOpen, onClose }) {
+  const { isOpen: isSidebarOpen } = useSidebar();
   const [showEmailPopup, setShowEmailPopup] = useState(false);
   const [emailCopied, setEmailCopied] = useState(false);
   const [personalMessage, setPersonalMessage] = useState("");
@@ -189,19 +191,27 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 1000;
+          z-index: 9999;
           padding: 20px;
+          padding-left: ${isSidebarOpen ? '280px' : '90px'};
           backdrop-filter: blur(5px);
+          transition: padding-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+          .modal-overlay {
+            padding-left: 20px;
+          }
         }
 
         .modal-content {
           background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
           border: 1px solid rgba(255,255,255,.15);
-          border-radius: 16px;
-          padding: 20px;
-          max-width: 1000px;
+          border-radius: 12px;
+          padding: 16px;
+          max-width: 850px;
           width: 100%;
-          max-height: 95vh;
+          max-height: 90vh;
           overflow-y: auto;
           position: relative;
           backdrop-filter: blur(15px);
@@ -209,10 +219,19 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
           font-family: var(--font);
         }
 
+        .modal-content::-webkit-scrollbar {
+          display: none;
+        }
+
+        .modal-content {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+
         .modal-layout {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 16px;
+          gap: 12px;
           align-items: start;
         }
 
@@ -224,7 +243,7 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
         .modal-main {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 8px;
         }
 
         @media (max-width: 768px) {
@@ -243,12 +262,12 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
           flex-direction: column;
           align-items: center;
           text-align: center;
-          padding: 16px;
+          padding: 12px;
           background: linear-gradient(135deg, rgba(255,205,0,.12), rgba(255,107,53,.08));
           border: 1px solid rgba(255,205,0,.3);
-          border-radius: 12px;
+          border-radius: 10px;
           backdrop-filter: blur(15px);
-          margin-bottom: 12px;
+          margin-bottom: 8px;
           position: relative;
           overflow: hidden;
         }
@@ -310,18 +329,18 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
         }
 
         .modal-avatar {
-          width: 60px;
-          height: 60px;
+          width: 50px;
+          height: 50px;
           border-radius: 50%;
           background: linear-gradient(135deg, var(--maize), #ff6b35);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 24px;
+          font-size: 20px;
           font-weight: 900;
           color: #111;
           flex-shrink: 0;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
           position: relative;
           z-index: 1;
           box-shadow: 0 4px 16px rgba(255,205,0,.3);
@@ -329,10 +348,10 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
         }
 
         .modal-user-info h2 {
-          font-size: 24px;
+          font-size: 20px;
           font-weight: 900;
           color: var(--fg);
-          margin: 0 0 6px 0;
+          margin: 0 0 4px 0;
           text-shadow: 0 2px 4px rgba(0,0,0,.3);
           position: relative;
           z-index: 1;
@@ -340,8 +359,8 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
 
         .modal-user-info p {
           color: var(--muted);
-          margin: 0 0 3px 0;
-          font-size: 15px;
+          margin: 0 0 2px 0;
+          font-size: 13px;
           font-weight: 500;
           position: relative;
           z-index: 1;
@@ -432,8 +451,8 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
           margin-bottom: 0;
           background: rgba(255,255,255,.02);
           border: 1px solid rgba(255,255,255,.05);
-          border-radius: 10px;
-          padding: 12px;
+          border-radius: 8px;
+          padding: 10px;
           transition: all 0.3s ease;
         }
 
@@ -444,12 +463,12 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
         }
 
         .modal-section-title {
-          font-size: 16px;
+          font-size: 14px;
           font-weight: 900;
           color: var(--maize);
-          margin: 0 0 8px 0;
+          margin: 0 0 6px 0;
           border-bottom: 2px solid var(--maize);
-          padding-bottom: 6px;
+          padding-bottom: 4px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
           position: relative;
@@ -466,8 +485,8 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
         }
 
         .modal-field {
-          margin-bottom: 8px;
-          padding: 8px;
+          margin-bottom: 6px;
+          padding: 6px;
           background: rgba(255,255,255,.02);
           border-radius: 6px;
           border: 1px solid rgba(255,255,255,.05);
@@ -483,33 +502,33 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
           display: block;
           font-weight: 800;
           color: var(--maize);
-          font-size: 12px;
-          margin-bottom: 4px;
+          font-size: 11px;
+          margin-bottom: 3px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
 
         .modal-field-value {
           color: var(--fg);
-          font-size: 15px;
+          font-size: 13px;
           font-weight: 500;
-          line-height: 1.4;
+          line-height: 1.3;
           padding: 1px 0;
         }
 
         .modal-classes-list {
           display: flex;
           flex-wrap: wrap;
-          gap: 6px;
-          margin-top: 6px;
+          gap: 4px;
+          margin-top: 4px;
         }
 
         .modal-class-tag {
           background: linear-gradient(135deg, rgba(255,205,0,.25), rgba(255,107,53,.15));
           color: var(--maize);
-          padding: 4px 8px;
+          padding: 3px 6px;
           border-radius: 4px;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 700;
           border: 1px solid rgba(255,205,0,.3);
           text-transform: uppercase;
@@ -525,16 +544,22 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
 
         .modal-close {
           position: absolute;
-          top: 15px;
-          right: 15px;
+          top: 12px;
+          right: 12px;
           background: none;
           border: none;
           color: var(--muted);
-          font-size: 20px;
+          font-size: 18px;
           cursor: pointer;
-          padding: 6px;
+          padding: 4px;
           border-radius: 50%;
           transition: all 0.2s ease;
+          z-index: 10001;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .modal-close:hover {
@@ -545,25 +570,25 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
         .modal-actions {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 8px;
           justify-content: center;
-          margin-top: 16px;
-          padding-top: 12px;
+          margin-top: 12px;
+          padding-top: 10px;
           border-top: 1px solid rgba(255,255,255,.1);
         }
         
         .modal-actions-buttons {
           display: flex;
-          gap: 10px;
+          gap: 8px;
           justify-content: center;
         }
 
         .modal-btn {
-          padding: 8px 16px;
-          border-radius: 8px;
+          padding: 6px 14px;
+          border-radius: 6px;
           border: 0;
           font-weight: 700;
-          font-size: 15px;
+          font-size: 13px;
           cursor: pointer;
           transition: all 0.2s ease;
         }
@@ -609,7 +634,7 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 2000;
+          z-index: 10000;
           padding: 20px;
           backdrop-filter: blur(8px);
         }

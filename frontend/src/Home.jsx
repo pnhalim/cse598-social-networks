@@ -24,6 +24,12 @@ export default function Home() {
           nav(`/complete-profile/${res.data.id}`, { replace: true });
           return;
         }
+        
+        // Check if onboarding is completed, redirect if not
+        if (!res.data.onboarding_completed) {
+          nav("/onboarding", { replace: true });
+          return;
+        }
       } catch (e) {
         // token missing/invalid
         localStorage.removeItem("jwt");

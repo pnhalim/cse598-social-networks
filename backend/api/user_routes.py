@@ -104,6 +104,37 @@ def update_user(user_update: UserUpdate, current_user: User = Depends(get_curren
     
     return current_user
 
+# Complete onboarding with preferences
+@router.post("/onboarding/complete", response_model=UserResponse)
+def complete_onboarding(prefs: PreferencesUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Complete onboarding by setting user preferences"""
+    # User must have completed profile first
+    if not current_user.profile_completed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please complete your profile first"
+        )
+    
+    # Update preference flags
+    if prefs.match_by_gender is not None:
+        current_user.match_by_gender = prefs.match_by_gender
+    if prefs.match_by_major is not None:
+        current_user.match_by_major = prefs.match_by_major
+    if prefs.match_by_academic_year is not None:
+        current_user.match_by_academic_year = prefs.match_by_academic_year
+    if prefs.match_by_study_preferences is not None:
+        current_user.match_by_study_preferences = prefs.match_by_study_preferences
+    if prefs.match_by_classes is not None:
+        current_user.match_by_classes = prefs.match_by_classes
+    
+    # Mark onboarding as completed
+    current_user.onboarding_completed = True
+    
+    db.commit()
+    db.refresh(current_user)
+    
+    return current_user
+
 # Update current user's preferences (no user_id path param)
 @router.put("/user/preferences", response_model=UserResponse)
 def update_preferences(prefs: PreferencesUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -115,6 +146,10 @@ def update_preferences(prefs: PreferencesUpdate, current_user: User = Depends(ge
         current_user.match_by_major = prefs.match_by_major
     if prefs.match_by_academic_year is not None:
         current_user.match_by_academic_year = prefs.match_by_academic_year
+    if prefs.match_by_study_preferences is not None:
+        current_user.match_by_study_preferences = prefs.match_by_study_preferences
+    if prefs.match_by_classes is not None:
+        current_user.match_by_classes = prefs.match_by_classes
     
     db.commit()
     db.refresh(current_user)

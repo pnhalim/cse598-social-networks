@@ -577,6 +577,38 @@ export default function Connections() {
           padding: 2rem;
           opacity: 0.6;
         }
+
+        .connection-notification-badge {
+          position: absolute;
+          top: -2px;
+          right: -2px;
+          width: 8px;
+          height: 8px;
+          background: var(--maize);
+          border: 1.5px solid rgba(0, 0, 0, 0.3);
+          border-radius: 50%;
+          box-shadow: 0 0 6px rgba(255, 205, 0, 1), 
+                      0 0 12px rgba(255, 205, 0, 0.6);
+          animation: pulse 2s ease-in-out infinite;
+          z-index: 10;
+          pointer-events: none;
+        }
+
+        .connection-avatar-wrapper {
+          position: relative;
+          flex-shrink: 0;
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.7;
+            transform: scale(1.1);
+          }
+        }
       `}</style>
 
       <div className="connections-wrapper">
@@ -610,10 +642,15 @@ export default function Connections() {
                   >
                     <div className="connection-header">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                        <div className="connection-avatar">
-                          {conn.name
-                            ? conn.name.charAt(0).toUpperCase()
-                            : conn.school_email?.charAt(0).toUpperCase() || "?"}
+                        <div className="connection-avatar-wrapper">
+                          <div className="connection-avatar">
+                            {conn.name
+                              ? conn.name.charAt(0).toUpperCase()
+                              : conn.school_email?.charAt(0).toUpperCase() || "?"}
+                          </div>
+                          {(conn.met === null || (conn.met === true && !conn.has_rating)) && (
+                            <span className="connection-notification-badge"></span>
+                          )}
                         </div>
                         <div className="connection-info">
                           <div className="connection-name">
@@ -685,10 +722,15 @@ export default function Connections() {
                   >
                     <div className="connection-header">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                        <div className="connection-avatar">
-                          {conn.name
-                            ? conn.name.charAt(0).toUpperCase()
-                            : conn.school_email?.charAt(0).toUpperCase() || "?"}
+                        <div className="connection-avatar-wrapper">
+                          <div className="connection-avatar">
+                            {conn.name
+                              ? conn.name.charAt(0).toUpperCase()
+                              : conn.school_email?.charAt(0).toUpperCase() || "?"}
+                          </div>
+                          {(conn.met === null || (conn.met === true && !conn.has_rating)) && (
+                            <span className="connection-notification-badge"></span>
+                          )}
                         </div>
                         <div className="connection-info">
                           <div className="connection-name">

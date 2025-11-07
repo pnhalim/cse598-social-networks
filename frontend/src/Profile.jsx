@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { me, updateUserProfile } from "./authService";
+import api from "./api";
 import collageUrl from "./assets/collage.jpg";
 import { validateTextInput } from "./censorshipUtils";
 import { useSidebar } from "./SidebarContext";
@@ -16,6 +17,14 @@ export default function Profile() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [newCurrentClass, setNewCurrentClass] = useState("");
   const [newPastClass, setNewPastClass] = useState("");
+  const [preferences, setPreferences] = useState({
+    match_by_gender: false,
+    match_by_major: false,
+    match_by_academic_year: false,
+    match_by_study_preferences: false,
+    match_by_classes: false,
+  });
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -34,6 +43,13 @@ export default function Profile() {
           yap_to_study_ratio: response.data.yap_to_study_ratio || "",
           classes_taking: Array.isArray(response.data.classes_taking) ? response.data.classes_taking : [],
           classes_taken:  Array.isArray(response.data.classes_taken)  ? response.data.classes_taken  : [],
+        });
+        setPreferences({
+          match_by_gender: response.data.match_by_gender || false,
+          match_by_major: response.data.match_by_major || false,
+          match_by_academic_year: response.data.match_by_academic_year || false,
+          match_by_study_preferences: response.data.match_by_study_preferences || false,
+          match_by_classes: response.data.match_by_classes || false,
         });
       } catch (error) {
         console.error("Error loading user:", error);
@@ -137,6 +153,31 @@ export default function Profile() {
   const handleLogout = () => {
     localStorage.removeItem("jwt");
     navigate("/", { replace: true });
+  };
+
+  const handlePreferenceChange = (key) => {
+    setPreferences(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const handleSavePreferences = async () => {
+    setIsSavingPreferences(true);
+    setMessage("");
+    
+    try {
+      const response = await api.put("/api/user/preferences", preferences);
+      setUser(response.data);
+      setMessage("Preferences updated successfully!");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      console.error("Error updating preferences:", error);
+      setMessage(error.response?.data?.detail || "Failed to update preferences");
+      setTimeout(() => setMessage(""), 3000);
+    } finally {
+      setIsSavingPreferences(false);
+    }
   };
 
   if (loading) {
@@ -683,10 +724,6 @@ export default function Profile() {
                 <span className="stat-label">Email Status</span>
                 <span className="stat-value">{user?.email_verified ? 'Verified' : 'Pending'}</span>
               </div>
-              <div className="stat-item">
-                <span className="stat-label">Reputation Score</span>
-                <span className="stat-value">{user?.reputation_score ?? 0}</span>
-              </div>
               {user?.trusted_badge_this_week && (
                 <div className="stat-item">
                   <span className="stat-label">Badge</span>
@@ -1067,6 +1104,219 @@ export default function Profile() {
         )}
       </div>
     )}
+          </div>
+        </div>
+
+        <div className="profile-section">
+          <h3 className="section-title">Matching Preferences</h3>
+          <p style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '16px', fontStyle: 'italic', padding: '0 12px' }}>
+            These are soft preferences that recommend similar people higher in your results. All users are still shown - preferences only affect the order, not who you can see.
+          </p>
+          
+          <div className="field" style={{ padding: '16px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ flex: 1 }}>
+                <label className="field-label" style={{ marginBottom: '4px' }}>Prioritize Same Gender</label>
+                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Recommend people with the same gender higher</div>
+              </div>
+              <div 
+                className={`toggle-switch ${preferences.match_by_gender ? 'active' : ''}`}
+                onClick={() => handlePreferenceChange('match_by_gender')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && handlePreferenceChange('match_by_gender')}
+                aria-label="Toggle match by gender"
+                style={{
+                  position: 'relative',
+                  width: '52px',
+                  height: '28px',
+                  background: preferences.match_by_gender ? 'var(--maize)' : 'rgba(255,255,255,.1)',
+                  border: `2px solid ${preferences.match_by_gender ? 'var(--maize)' : 'rgba(255,255,255,.2)'}`,
+                  borderRadius: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '2px',
+                  left: preferences.match_by_gender ? '24px' : '2px',
+                  width: '20px',
+                  height: '20px',
+                  background: 'white',
+                  borderRadius: '50%',
+                  transition: 'transform 0.3s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,.2)',
+                }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="field" style={{ padding: '16px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ flex: 1 }}>
+                <label className="field-label" style={{ marginBottom: '4px' }}>Prioritize Same Major</label>
+                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Recommend people with the same major higher</div>
+              </div>
+              <div 
+                className={`toggle-switch ${preferences.match_by_major ? 'active' : ''}`}
+                onClick={() => handlePreferenceChange('match_by_major')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && handlePreferenceChange('match_by_major')}
+                aria-label="Toggle match by major"
+                style={{
+                  position: 'relative',
+                  width: '52px',
+                  height: '28px',
+                  background: preferences.match_by_major ? 'var(--maize)' : 'rgba(255,255,255,.1)',
+                  border: `2px solid ${preferences.match_by_major ? 'var(--maize)' : 'rgba(255,255,255,.2)'}`,
+                  borderRadius: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '2px',
+                  left: preferences.match_by_major ? '24px' : '2px',
+                  width: '20px',
+                  height: '20px',
+                  background: 'white',
+                  borderRadius: '50%',
+                  transition: 'transform 0.3s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,.2)',
+                }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="field" style={{ padding: '16px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ flex: 1 }}>
+                <label className="field-label" style={{ marginBottom: '4px' }}>Prioritize Same Academic Year</label>
+                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Recommend people in the same year higher</div>
+              </div>
+              <div 
+                className={`toggle-switch ${preferences.match_by_academic_year ? 'active' : ''}`}
+                onClick={() => handlePreferenceChange('match_by_academic_year')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && handlePreferenceChange('match_by_academic_year')}
+                aria-label="Toggle match by academic year"
+                style={{
+                  position: 'relative',
+                  width: '52px',
+                  height: '28px',
+                  background: preferences.match_by_academic_year ? 'var(--maize)' : 'rgba(255,255,255,.1)',
+                  border: `2px solid ${preferences.match_by_academic_year ? 'var(--maize)' : 'rgba(255,255,255,.2)'}`,
+                  borderRadius: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '2px',
+                  left: preferences.match_by_academic_year ? '24px' : '2px',
+                  width: '20px',
+                  height: '20px',
+                  background: 'white',
+                  borderRadius: '50%',
+                  transition: 'transform 0.3s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,.2)',
+                }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="field" style={{ padding: '16px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ flex: 1 }}>
+                <label className="field-label" style={{ marginBottom: '4px' }}>Prioritize Similar Study Preferences</label>
+                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Recommend people with similar study habits higher</div>
+              </div>
+              <div 
+                className={`toggle-switch ${preferences.match_by_study_preferences ? 'active' : ''}`}
+                onClick={() => handlePreferenceChange('match_by_study_preferences')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && handlePreferenceChange('match_by_study_preferences')}
+                aria-label="Toggle match by study preferences"
+                style={{
+                  position: 'relative',
+                  width: '52px',
+                  height: '28px',
+                  background: preferences.match_by_study_preferences ? 'var(--maize)' : 'rgba(255,255,255,.1)',
+                  border: `2px solid ${preferences.match_by_study_preferences ? 'var(--maize)' : 'rgba(255,255,255,.2)'}`,
+                  borderRadius: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '2px',
+                  left: preferences.match_by_study_preferences ? '24px' : '2px',
+                  width: '20px',
+                  height: '20px',
+                  background: 'white',
+                  borderRadius: '50%',
+                  transition: 'transform 0.3s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,.2)',
+                }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="field" style={{ padding: '16px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ flex: 1 }}>
+                <label className="field-label" style={{ marginBottom: '4px' }}>Prioritize Similar Classes</label>
+                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Recommend people taking similar classes higher</div>
+              </div>
+              <div 
+                className={`toggle-switch ${preferences.match_by_classes ? 'active' : ''}`}
+                onClick={() => handlePreferenceChange('match_by_classes')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && handlePreferenceChange('match_by_classes')}
+                aria-label="Toggle match by classes"
+                style={{
+                  position: 'relative',
+                  width: '52px',
+                  height: '28px',
+                  background: preferences.match_by_classes ? 'var(--maize)' : 'rgba(255,255,255,.1)',
+                  border: `2px solid ${preferences.match_by_classes ? 'var(--maize)' : 'rgba(255,255,255,.2)'}`,
+                  borderRadius: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '2px',
+                  left: preferences.match_by_classes ? '24px' : '2px',
+                  width: '20px',
+                  height: '20px',
+                  background: 'white',
+                  borderRadius: '50%',
+                  transition: 'transform 0.3s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,.2)',
+                }} />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center' }}>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleSavePreferences}
+              disabled={isSavingPreferences}
+              style={{ width: 'auto', padding: '10px 24px' }}
+            >
+              {isSavingPreferences ? "Saving..." : "Save Preferences"}
+            </button>
           </div>
         </div>
 

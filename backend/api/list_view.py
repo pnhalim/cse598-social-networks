@@ -17,6 +17,10 @@ router = APIRouter(prefix="/api", tags=["list view"])
 
 
 def _apply_user_preferences_query(db: Session, current_user: User):
+    """
+    Get all users for soft matching. Preferences are used for ordering, not filtering.
+    Still respects candidate users' preferences (if they require a match, filter them out).
+    """
     query = db.query(User).filter(
         and_(
             User.id != current_user.id,
@@ -25,14 +29,10 @@ def _apply_user_preferences_query(db: Session, current_user: User):
         )
     )
 
-    if current_user.match_by_gender and current_user.gender:
-        query = query.filter(User.gender == current_user.gender)
-    if current_user.match_by_major and current_user.major:
-        query = query.filter(User.major == current_user.major)
-    if current_user.match_by_academic_year and current_user.academic_year:
-        query = query.filter(User.academic_year == current_user.academic_year)
-
-    # Also respect the candidate users' preferences: if they toggled a filter, they require a match
+    # Don't filter by current_user's preferences - show all users, preferences will be used for ordering
+    
+    # Still respect the candidate users' preferences: if they toggled a filter, they require a match
+    # This ensures we don't show users who explicitly don't want to be matched with the current user
     # Candidate requires same gender
     if current_user.gender:
         query = query.filter(or_(User.match_by_gender == False, User.gender == current_user.gender))
@@ -61,8 +61,10 @@ def list_users(
     db: Session = Depends(get_db),
 ):
     """
-    List users that match the current user's preferences using cursor pagination.
-    Results are ordered by similarity to the current user (most similar first).
+    List users using soft matching with cursor pagination.
+    All users are shown, but results are ordered by similarity to the current user (most similar first).
+    Similarity is calculated based on the current user's preferences (only factors marked as important).
+    Still respects candidate users' preferences (if they require a match, they are filtered out).
     Only available for users with frontend_design == 'design1'.
     """
     if current_user.frontend_design != "design1":
