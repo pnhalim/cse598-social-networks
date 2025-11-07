@@ -32,34 +32,82 @@ general_router = None
 mutual_matching_router = None
 list_view_router = None
 
+# Store import errors for debugging
+import_errors = {}
+
 try:
     from api.auth_routes import router as auth_router
     logger.info("✅ Successfully imported auth_router")
 except Exception as e:
+    import traceback
+    error_msg = str(e)
+    error_traceback = traceback.format_exc()
+    import_errors["auth_router"] = {
+        "error": error_msg,
+        "traceback": error_traceback,
+        "exception_type": type(e).__name__,
+        "full_exception": repr(e)
+    }
     logger.error(f"❌ Error importing auth_router: {e}", exc_info=True)
 
 try:
     from api.user_routes import router as user_router
     logger.info("✅ Successfully imported user_router")
 except Exception as e:
+    import traceback
+    error_msg = str(e)
+    error_traceback = traceback.format_exc()
+    import_errors["user_router"] = {
+        "error": error_msg,
+        "traceback": error_traceback,
+        "exception_type": type(e).__name__,
+        "full_exception": repr(e)
+    }
     logger.error(f"❌ Error importing user_router: {e}", exc_info=True)
 
 try:
     from api.general_routes import router as general_router
     logger.info("✅ Successfully imported general_router")
 except Exception as e:
+    import traceback
+    error_msg = str(e)
+    error_traceback = traceback.format_exc()
+    import_errors["general_router"] = {
+        "error": error_msg,
+        "traceback": error_traceback,
+        "exception_type": type(e).__name__,
+        "full_exception": repr(e)
+    }
     logger.error(f"❌ Error importing general_router: {e}", exc_info=True)
 
 try:
     from api.mutual_matching_routes import router as mutual_matching_router
     logger.info("✅ Successfully imported mutual_matching_router")
 except Exception as e:
+    import traceback
+    error_msg = str(e)
+    error_traceback = traceback.format_exc()
+    import_errors["mutual_matching_router"] = {
+        "error": error_msg,
+        "traceback": error_traceback,
+        "exception_type": type(e).__name__,
+        "full_exception": repr(e)
+    }
     logger.error(f"❌ Error importing mutual_matching_router: {e}", exc_info=True)
 
 try:
     from api.list_view import router as list_view_router
     logger.info("✅ Successfully imported list_view_router")
 except Exception as e:
+    import traceback
+    error_msg = str(e)
+    error_traceback = traceback.format_exc()
+    import_errors["list_view_router"] = {
+        "error": error_msg,
+        "traceback": error_traceback,
+        "exception_type": type(e).__name__,
+        "full_exception": repr(e)
+    }
     logger.error(f"❌ Error importing list_view_router: {e}", exc_info=True)
 
 # Create FastAPI app
@@ -217,7 +265,7 @@ def test_endpoint():
 
 @app.get("/api/health/detailed")
 def detailed_health_check():
-    """Detailed health check showing which routers and components are loaded"""
+    """Detailed health check showing which routers and components are loaded with error details"""
     try:
         from core.database import engine
         db_configured = engine is not None
@@ -237,13 +285,147 @@ def detailed_health_check():
     loaded_count = sum(1 for status in routers_status.values() if status == "loaded")
     total_count = len(routers_status)
     
-    return {
+    # Router dependencies mapping for better error context
+    router_dependencies = {
+        "auth_router": [
+            "api.auth_routes",
+            "services.email_service",
+            "services.auth_utils",
+            "services.censorship_service",
+            "config.email_config"
+        ],
+        "user_router": [
+            "api.user_routes",
+            "services.reputation_service",
+            "services.image_service",
+            "services.email_service",
+            "services.censorship_service",
+            "config.auth_dependencies",
+            "config.cloudinary_config"
+        ],
+        "mutual_matching_router": [
+            "api.mutual_matching_routes",
+            "utils.similarity",
+            "config.auth_dependencies"
+        ],
+        "list_view_router": [
+            "api.list_view",
+            "utils.similarity",
+            "config.auth_dependencies"
+        ],
+        "general_router": [
+            "api.general_routes",
+            "models.schemas"
+        ]
+    }
+    
+    response = {
         "status": "ok" if loaded_count == total_count else "degraded",
         "database": db_status,
         "routers": routers_status,
         "summary": f"{loaded_count}/{total_count} routers loaded",
-        "message": "Check Vercel function logs for detailed error messages" if loaded_count < total_count else "All systems operational"
+        "message": "Check import_errors below for detailed error messages" if loaded_count < total_count else "All systems operational"
     }
+    
+    # Add detailed import errors if any
+    if import_errors:
+        response["import_errors"] = {}
+        for router_name, error_info in import_errors.items():
+            error_msg = error_info["error"]
+            traceback_lines = error_info["traceback"].split("\n")
+            exception_type = error_info.get("exception_type", "Exception")
+            full_exception = error_info.get("full_exception", str(error_msg))
+            
+            # Find all file locations in traceback
+            file_locations = []
+            error_lines = []
+            for line in traceback_lines:
+                if "File" in line and ("api/" in line or "services/" in line or "config/" in line or "utils/" in line or "models/" in line or "core/" in line):
+                    file_locations.append(line.strip())
+                if "Error:" in line or "Exception:" in line or exception_type in line:
+                    error_lines.append(line.strip())
+            
+            # Get full traceback (not just last 15 lines)
+            full_traceback = traceback_lines
+            
+            # Analyze common error patterns and provide suggestions
+            suggestions = []
+            error_str = str(error_msg).lower()
+            
+            if "modulenotfounderror" in error_str or "no module named" in error_str:
+                # Extract module name if possible
+                module_match = None
+                for line in traceback_lines:
+                    if "No module named" in line:
+                        module_match = line.split("No module named")[-1].strip().strip("'\"")
+                        break
+                if module_match:
+                    suggestions.append(f"Missing Python package: '{module_match}' - add it to requirements.txt")
+                else:
+                    suggestions.append("Missing Python package - check requirements.txt and ensure all dependencies are installed")
+                suggestions.append("Run: pip install -r requirements.txt")
+            elif "importerror" in error_str or "cannot import name" in error_str:
+                # Extract what couldn't be imported
+                import_match = None
+                for line in traceback_lines:
+                    if "cannot import name" in line.lower():
+                        parts = line.split("cannot import name")
+                        if len(parts) > 1:
+                            import_match = parts[1].strip().strip("'\"")
+                            break
+                if import_match:
+                    suggestions.append(f"Cannot import '{import_match}' - check if it exists in the module")
+                else:
+                    suggestions.append("Import error - check if the module/file exists and has correct imports")
+                suggestions.append("Check file structure and __init__.py files")
+            elif "attributeerror" in error_str:
+                suggestions.append("Attribute error - check if the imported object has the expected attributes")
+                suggestions.append("Verify the object is properly initialized before use")
+            elif "database" in error_str or "database_url" in error_str or "engine" in error_str:
+                suggestions.append("Database configuration issue - check DATABASE_URL environment variable in Vercel")
+                suggestions.append("Ensure PostgreSQL database is set up and connected")
+            elif "email" in error_str or "mail" in error_str:
+                suggestions.append("Email configuration issue - check email-related environment variables (MAIL_*)")
+                suggestions.append("Verify SMTP settings in Vercel environment variables")
+            elif "cloudinary" in error_str:
+                suggestions.append("Cloudinary configuration issue - check CLOUDINARY_* environment variables")
+                suggestions.append("Verify Cloudinary credentials in Vercel environment variables")
+            elif "pydantic" in error_str or "settings" in error_str:
+                suggestions.append("Configuration settings issue - check pydantic-settings package is installed")
+                suggestions.append("Verify environment variables are set correctly")
+            elif "oauth" in error_str or "token" in error_str:
+                suggestions.append("Authentication configuration issue - check JWT_SECRET_KEY environment variable")
+            else:
+                suggestions.append("Check Vercel function logs for more details")
+                suggestions.append("Verify all required environment variables are set")
+            
+            response["import_errors"][router_name] = {
+                "exception_type": exception_type,
+                "error_message": str(error_msg),
+                "full_exception": full_exception,
+                "file_locations": file_locations if file_locations else ["Unknown"],
+                "error_lines": error_lines if error_lines else [str(error_msg)],
+                "dependencies": router_dependencies.get(router_name, []),
+                "full_traceback": full_traceback,
+                "traceback_summary": traceback_lines[-10:] if len(traceback_lines) > 10 else traceback_lines,
+                "suggestions": suggestions
+            }
+    
+    # Add overall diagnostics
+    if loaded_count < total_count:
+        response["diagnostics"] = {
+            "failed_routers": [name for name, status in routers_status.items() if status != "loaded"],
+            "working_routers": [name for name, status in routers_status.items() if status == "loaded"],
+            "common_issues": [
+                "Missing environment variables (check Vercel project settings)",
+                "Missing Python packages (check requirements.txt)",
+                "Import path issues (check file structure)",
+                "Database connection issues (check DATABASE_URL)",
+                "Configuration file errors (check config/ directory)"
+            ]
+        }
+    
+    return response
 
 if __name__ == "__main__":
     import uvicorn
