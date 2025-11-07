@@ -361,7 +361,7 @@ const sortByOverlap = (list, mineSet) =>
         }
 
         .user-list-container{
-          margin-left: 260px;
+          margin-left: ${isOpen ? '260px' : '70px'};
           min-height:100vh;
           color:var(--fg);
           font-family:var(--font);
