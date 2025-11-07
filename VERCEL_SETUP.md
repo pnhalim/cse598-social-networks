@@ -93,7 +93,12 @@ In the Vercel dashboard (or via CLI), set the following environment variables:
    - `CLOUDINARY_API_KEY`: Your Cloudinary API key
    - `CLOUDINARY_API_SECRET`: Your Cloudinary API secret
 
-5. **`CORS_ORIGINS`** (Optional)
+5. **`VITE_API_BASE_URL`** (Optional - Usually not needed)
+   - **For Vercel**: Leave empty or don't set (automatically uses `/api`)
+   - **For local dev**: Set to `http://localhost:8000` (or leave empty, defaults to this)
+   - The frontend code automatically uses relative `/api` URL in production
+
+6. **`CORS_ORIGINS`** (Optional)
    - **Value**: Comma-separated list of allowed origins
    - **Example**: `https://your-app.vercel.app,https://www.your-app.com`
    - **Default**: `*` (allows all origins)

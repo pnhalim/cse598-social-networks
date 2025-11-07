@@ -74,10 +74,22 @@ Sign up at [cloudinary.com](https://cloudinary.com) to get these values.
 
 ### Frontend Configuration
 
-- **`VITE_API_BASE_URL`** (Optional)
-  - For local development: `http://localhost:8000`
-  - For production: Leave empty to use relative `/api` URL
-  - **Note**: Vite requires the `VITE_` prefix
+- **`VITE_API_BASE_URL`** (Optional - Usually not needed for Vercel)
+  
+  **For Local Development:**
+  - Set to: `http://localhost:8000`
+  - Or leave empty (defaults to `http://localhost:8000`)
+  
+  **For Vercel Production:**
+  - **Leave empty or don't set** - The code automatically uses `/api` (relative URL)
+  - OR set to `/api` explicitly (same result)
+  - **Do NOT set to full URL** like `https://your-app.vercel.app/api` (not needed)
+  
+  **Why relative URL?**
+  - Works on all Vercel domains (production, preview, custom domains)
+  - No CORS issues (same origin)
+  - Automatically uses correct protocol (http/https)
+  - **Note**: Vite requires the `VITE_` prefix for environment variables
 
 ### CORS Configuration
 

@@ -72,9 +72,13 @@ Most settings should be **auto-detected** from `vercel.json`, but verify:
    - `CLOUDINARY_API_KEY`
    - `CLOUDINARY_API_SECRET`
 
-5. **Optional:**
-   - `CORS_ORIGINS` - Comma-separated allowed origins
-   - `VITE_API_BASE_URL` - Usually not needed (uses relative `/api`)
+5. **`VITE_API_BASE_URL`** (Optional - Usually not needed)
+   - **For Vercel**: Leave empty or don't set
+   - The frontend automatically uses relative `/api` URL in production
+   - **For local dev only**: Set to `http://localhost:8000` in your local `.env` file
+
+6. **Optional:**
+   - `CORS_ORIGINS` - Comma-separated list of allowed origins
 
 **Environment Scope:**
 - Set each variable for: **Production**, **Preview**, and **Development**
