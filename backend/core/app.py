@@ -1,13 +1,66 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Try to initialize database (but don't crash if it fails)
+try:
+    from core.database import engine
+    from models.models import Base
+    
+    if engine:
+        try:
+            Base.metadata.create_all(bind=engine)
+            logger.info("✅ Database tables created/verified successfully")
+        except Exception as e:
+            logger.warning(f"⚠️  Error creating database tables: {e}")
+            # Continue anyway - tables might already exist or connection will fail later
+    else:
+        logger.warning("⚠️  Database engine not available - tables will not be created. Set DATABASE_URL environment variable.")
+except Exception as e:
+    logger.warning(f"⚠️  Error importing database modules: {e}")
+    # Continue - database might not be configured yet
 
 # Import routers individually so one failure doesn't prevent others from loading
-from api.auth_routes import router as auth_router
-from api.user_routes import router as user_router
-from api.general_routes import router as general_router
-from api.mutual_matching_routes import router as mutual_matching_router
-from api.list_view import router as list_view_router
+auth_router = None
+user_router = None
+general_router = None
+mutual_matching_router = None
+list_view_router = None
+
+try:
+    from api.auth_routes import router as auth_router
+    logger.info("✅ Successfully imported auth_router")
+except Exception as e:
+    logger.error(f"❌ Error importing auth_router: {e}", exc_info=True)
+
+try:
+    from api.user_routes import router as user_router
+    logger.info("✅ Successfully imported user_router")
+except Exception as e:
+    logger.error(f"❌ Error importing user_router: {e}", exc_info=True)
+
+try:
+    from api.general_routes import router as general_router
+    logger.info("✅ Successfully imported general_router")
+except Exception as e:
+    logger.error(f"❌ Error importing general_router: {e}", exc_info=True)
+
+try:
+    from api.mutual_matching_routes import router as mutual_matching_router
+    logger.info("✅ Successfully imported mutual_matching_router")
+except Exception as e:
+    logger.error(f"❌ Error importing mutual_matching_router: {e}", exc_info=True)
+
+try:
+    from api.list_view import router as list_view_router
+    logger.info("✅ Successfully imported list_view_router")
+except Exception as e:
+    logger.error(f"❌ Error importing list_view_router: {e}", exc_info=True)
 
 # Create FastAPI app
 app = FastAPI(
@@ -54,11 +107,35 @@ app.add_middleware(
 )
 
 # Include routers (only if they were imported successfully)
-app.include_router(auth_router)
-app.include_router(user_router)
-app.include_router(general_router)
-app.include_router(mutual_matching_router)
-app.include_router(list_view_router)
+if auth_router:
+    app.include_router(auth_router)
+    logger.info("✅ Included auth_router")
+else:
+    logger.warning("⚠️  auth_router not included (import failed)")
+
+if user_router:
+    app.include_router(user_router)
+    logger.info("✅ Included user_router")
+else:
+    logger.warning("⚠️  user_router not included (import failed)")
+
+if general_router:
+    app.include_router(general_router)
+    logger.info("✅ Included general_router")
+else:
+    logger.warning("⚠️  general_router not included (import failed)")
+
+if mutual_matching_router:
+    app.include_router(mutual_matching_router)
+    logger.info("✅ Included mutual_matching_router")
+else:
+    logger.warning("⚠️  mutual_matching_router not included (import failed)")
+
+if list_view_router:
+    app.include_router(list_view_router)
+    logger.info("✅ Included list_view_router")
+else:
+    logger.warning("⚠️  list_view_router not included (import failed)")
 
 # Add error handler for missing database
 @app.exception_handler(Exception)
@@ -136,6 +213,36 @@ def test_endpoint():
         "status": "ok",
         "message": "API is working",
         "database_configured": db_configured
+    }
+
+@app.get("/api/health/detailed")
+def detailed_health_check():
+    """Detailed health check showing which routers and components are loaded"""
+    try:
+        from core.database import engine
+        db_configured = engine is not None
+        db_status = "configured" if db_configured else "not configured"
+    except Exception as e:
+        db_configured = False
+        db_status = f"error: {str(e)}"
+    
+    routers_status = {
+        "auth_router": "loaded" if auth_router else "failed to import",
+        "user_router": "loaded" if user_router else "failed to import",
+        "general_router": "loaded" if general_router else "failed to import",
+        "mutual_matching_router": "loaded" if mutual_matching_router else "failed to import",
+        "list_view_router": "loaded" if list_view_router else "failed to import",
+    }
+    
+    loaded_count = sum(1 for status in routers_status.values() if status == "loaded")
+    total_count = len(routers_status)
+    
+    return {
+        "status": "ok" if loaded_count == total_count else "degraded",
+        "database": db_status,
+        "routers": routers_status,
+        "summary": f"{loaded_count}/{total_count} routers loaded",
+        "message": "Check Vercel function logs for detailed error messages" if loaded_count < total_count else "All systems operational"
     }
 
 if __name__ == "__main__":
