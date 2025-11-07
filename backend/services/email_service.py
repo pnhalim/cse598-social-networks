@@ -1,5 +1,3 @@
-from fastapi_mail import FastMail, MessageSchema
-from config.email_config import conf, email_settings
 from jose import jwt
 from datetime import datetime, timedelta, timezone
 import os
@@ -9,8 +7,23 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from models.models import VerificationCode
 
-# Secret key for JWT tokens (in production, use a secure random key)
-SECRET_KEY = email_settings.secret_key
+# Import email config with error handling
+try:
+    from fastapi_mail import FastMail, MessageSchema
+    from config.email_config import conf, email_settings
+    # Secret key for JWT tokens (in production, use a secure random key)
+    SECRET_KEY = email_settings.secret_key if email_settings else os.getenv("SECRET_KEY", "your-super-secret-key-change-in-production")
+except Exception as e:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.error(f"Error importing email config: {e}", exc_info=True)
+    # Fallback values
+    conf = None
+    email_settings = None
+    SECRET_KEY = os.getenv("SECRET_KEY", "your-super-secret-key-change-in-production")
+    FastMail = None
+    MessageSchema = None
+
 ALGORITHM = "HS256"
 
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
