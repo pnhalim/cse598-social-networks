@@ -341,3 +341,27 @@ class UserNoteResponse(BaseModel):
 class UserNotesResponse(BaseModel):
     notes: List[UserNoteResponse]
     total: int
+
+# Statistics schemas
+class UserStatisticsResponse(BaseModel):
+    user_id: int
+    total_reach_outs: int
+    total_meetings: int
+    meetings_as_sender: int
+    meetings_as_recipient: int
+
+class ReputationReachOutStatsResponse(BaseModel):
+    total_reach_outs: int
+    to_badged_users: int
+    to_non_badged_users: int
+    badged_percentage: float
+    non_badged_percentage: float
+
+class MeetingOccurrenceResponse(BaseModel):
+    percentage: float
+    users_with_meetings: int
+    total_users: int
+
+class StatisticsResponse(BaseModel):
+    meeting_occurrence: MeetingOccurrenceResponse
+    reputation_reach_outs: ReputationReachOutStatsResponse
