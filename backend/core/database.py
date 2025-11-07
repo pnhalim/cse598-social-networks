@@ -62,13 +62,9 @@ try:
         logger.info("SQLite engine created")
     elif SQLALCHEMY_DATABASE_URL == "postgresql://missing-database-url":
         # Placeholder for missing DATABASE_URL on Vercel
-        # Create a dummy engine that will fail gracefully on first use
-        logger.warning("Using placeholder database URL - DATABASE_URL must be configured")
-        engine = create_engine(
-            SQLALCHEMY_DATABASE_URL,
-            connect_args=connect_args,
-            pool_pre_ping=False,  # Don't try to ping invalid URL
-        )
+        # Don't create engine - set to None so it fails gracefully
+        logger.warning("DATABASE_URL not set - engine will be None. Database operations will fail with clear error.")
+        engine = None
     else:
         engine = create_engine(
             SQLALCHEMY_DATABASE_URL,
