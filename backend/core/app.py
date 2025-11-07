@@ -154,6 +154,21 @@ def read_root():
     """Root endpoint"""
     return {"message": "Welcome to Study Buddy API", "docs": "/docs"}
 
+@app.get("/api/test")
+def test_endpoint():
+    """Simple test endpoint that doesn't require database"""
+    try:
+        from core.database import engine
+        db_configured = engine is not None
+    except:
+        db_configured = False
+    
+    return {
+        "status": "ok",
+        "message": "API is working",
+        "database_configured": db_configured
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
