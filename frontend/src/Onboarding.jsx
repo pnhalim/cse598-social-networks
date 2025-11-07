@@ -33,7 +33,7 @@ export default function Onboarding() {
     setSubmitMessage("");
     
     try {
-      const response = await api.post("/api/onboarding/complete", preferences);
+      const response = await api.post("/onboarding/complete", preferences);
       
       if (response.data) {
         setSubmitMessage("Preferences saved successfully!");

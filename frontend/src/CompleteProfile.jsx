@@ -124,7 +124,7 @@ export default function CompleteProfile() {
     setSubmitMessage("");
     
     try {
-      const response = await api.post(`/api/complete-profile/${user_id}`, formData);
+      const response = await api.post(`/complete-profile/${user_id}`, formData);
       
       if (response.data.message) {
         setSubmitMessage("Profile completed successfully! Welcome to Study Buddy.");

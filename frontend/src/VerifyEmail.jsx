@@ -13,7 +13,7 @@ export default function VerifyEmail() {
     (async () => {
       try {
         // Exchange verification code for JWT token
-        const res = await api.post(`/api/verify-code/${code}`);
+        const res = await api.post(`/verify-code/${code}`);
         if (!isMounted) return;
         
         // Store the JWT token for future API calls

@@ -168,7 +168,7 @@ export default function Profile() {
     setMessage("");
     
     try {
-      const response = await api.put("/api/user/preferences", preferences);
+      const response = await api.put("/user/preferences", preferences);
       setUser(response.data);
       setMessage("Preferences updated successfully!");
       setTimeout(() => setMessage(""), 3000);
