@@ -704,92 +704,103 @@ const sortByOverlap = (list, mineSet) =>
           cursor:pointer;
           transition:all .2s ease;
           position: absolute;
-          right: 0px;
+          right: calc((100% - min(1200px, 100%)) / 2);
           margin-top: 4px;
         }
         
+        @media (max-width: 1300px) {
+          .filter-trigger {
+            right: calc(50% - 45vw); /* more fluid on narrower screens */
+          }
+        }
+
+        @media (max-width: 768px) {
+          .filter-trigger {
+            right: 20px; /* prevent clipping on small devices */
+          }
+        }
         .filter-trigger:hover{
           background:rgba(255,255,255,.12);
           border-color:var(--maize);
         }
         .filter-trigger .chev{ font-size:12px; opacity:.9; }
 
-.filter-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 380px;
-  background: rgba(14,14,16,.95);
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 12px;
-  box-shadow: 0 12px 28px rgba(0,0,0,.45);
-  backdrop-filter: blur(10px);
-  padding: 14px 16px;
-  z-index: 10;
-}
+        .filter-dropdown {
+          position: absolute;
+          top: calc(100% + 8px);
+          right: 0;
+          width: 380px;
+          background: rgba(14,14,16,.95);
+          border: 1px solid rgba(255,255,255,.12);
+          border-radius: 12px;
+          box-shadow: 0 12px 28px rgba(0,0,0,.45);
+          backdrop-filter: blur(10px);
+          padding: 14px 16px;
+          z-index: 10;
+        }
 
-/* Two-column layout — label left, option right, aligned neatly */
-.filter-row {
-  display: grid;
-  grid-template-columns: 110px 1fr; /* smaller label column */
-  gap: 10px; /* small spacing between label & control */
-  align-items: center;
-  margin-bottom: 12px;
-}
+        /* Two-column layout — label left, option right, aligned neatly */
+        .filter-row {
+          display: grid;
+          grid-template-columns: 110px 1fr; /* smaller label column */
+          gap: 10px; /* small spacing between label & control */
+          align-items: center;
+          margin-bottom: 12px;
+        }
 
-.filter-row label {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--fg);
-  text-align: left; /* align text to left */
-  padding-left: 4px; /* subtle indent */
-}
+        .filter-row label {
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--fg);
+          text-align: left; /* align text to left */
+          padding-left: 4px; /* subtle indent */
+        }
 
-/* Inputs and dropdowns */
-.filter-row select,
-.filter-input {
-  width: 100%;
-  background: rgba(255,255,255,.08);
-  color: var(--fg);
-  border: 1px solid rgba(255,255,255,.18);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-weight: 600;
-  font-size: 15px;
-  height: 42px;
-}
+        /* Inputs and dropdowns */
+        .filter-row select,
+        .filter-input {
+          width: 100%;
+          background: rgba(255,255,255,.08);
+          color: var(--fg);
+          border: 1px solid rgba(255,255,255,.18);
+          border-radius: 8px;
+          padding: 10px 12px;
+          font-weight: 600;
+          font-size: 15px;
+          height: 42px;
+        }
 
-.filter-row select:focus,
-.filter-input:focus {
-  outline: none;
-  border-color: var(--maize);
-  box-shadow: 0 0 0 3px rgba(255,205,0,.15);
-}
+        .filter-row select:focus,
+        .filter-input:focus {
+          outline: none;
+          border-color: var(--maize);
+          box-shadow: 0 0 0 3px rgba(255,205,0,.15);
+        }
 
-/* Buttons row stays right-aligned */
-.filter-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 10px;
-}
-.filter-actions .ghost {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,.25);
-  color: var(--fg);
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-}
-.filter-actions .apply {
-  background: var(--maize);
-  color: #111;
-  border: 0;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-weight: 800;
-  cursor: pointer;
-}
+        /* Buttons row stays right-aligned */
+        .filter-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          margin-top: 10px;
+        }
+        .filter-actions .ghost {
+          background: transparent;
+          border: 1px solid rgba(255,255,255,.25);
+          color: var(--fg);
+          border-radius: 8px;
+          padding: 8px 12px;
+          cursor: pointer;
+        }
+        .filter-actions .apply {
+          background: var(--maize);
+          color: #111;
+          border: 0;
+          border-radius: 8px;
+          padding: 8px 14px;
+          font-weight: 800;
+          cursor: pointer;
+        }
       `}</style>
 
       <div className="user-list-container">
