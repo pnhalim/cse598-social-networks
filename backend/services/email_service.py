@@ -199,7 +199,7 @@ async def send_verification_email(user_email: str, user_name: str, user_major: s
     reject_token_str = create_verification_token(user_id, "reject")
     
     # Create URLs with short codes
-    verification_url = f"{FRONTEND_BASE_URL}/verify-email/{verify_code}"
+    verification_url = f"{base_url}/api/verify-email/link/{verify_code}"
     rejection_url = f"{base_url}/api/reject-email/{reject_code}"
     
     # Email template variables
@@ -293,7 +293,7 @@ async def send_password_reset_email(user_email: str, user_name: str, user_id: in
     reset_code = generate_verification_code()
     store_verification_code(db, reset_code, user_id, "reset")
 
-    reset_url = f"{FRONTEND_BASE_URL}/reset-password/{reset_code}"
+    reset_url = f"{base_url}/api/reset-password/link/{reset_code}"
 
     # If you have a template, swap template_name + template_body.
     message = MessageSchema(

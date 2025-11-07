@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Form
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from core.database import get_db
 from models.models import User
@@ -7,7 +8,7 @@ from models.schemas import (
     ProfileSetup, ProfileSetupResponse, LoginRequest, LoginResponse
 )
 from services.utils import assign_frontend_design
-from services.email_service import send_verification_email, send_password_reset_email, verify_token, get_verification_code_data, create_verification_token
+from services.email_service import send_verification_email, send_password_reset_email, verify_token, get_verification_code_data, create_verification_token, FRONTEND_BASE_URL
 from services.auth_utils import hash_password, verify_password, create_access_token
 from services.censorship_service import validate_text_input
 
@@ -612,3 +613,13 @@ def reset_password(code: str, password_data: PasswordSetup, db: Session = Depend
         user_id=user.id,
         access_token=access_token
     )
+
+@router.get("/verify-email/link/{code}", include_in_schema=False)
+def redirect_verify_email_link(code: str):
+    frontend_url = f"{FRONTEND_BASE_URL}/verify-email/{code}"
+    return RedirectResponse(url=frontend_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
+@router.get("/reset-password/link/{code}", include_in_schema=False)
+def redirect_reset_password_link(code: str):
+    frontend_url = f"{FRONTEND_BASE_URL}/reset-password/{code}"
+    return RedirectResponse(url=frontend_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
