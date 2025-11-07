@@ -1,16 +1,31 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
-from core.database import engine
-from models.models import Base
-from api.auth_routes import router as auth_router
-from api.user_routes import router as user_router
-from api.general_routes import router as general_router
-from api.mutual_matching_routes import router as mutual_matching_router
-from api.list_view import router as list_view_router
+import logging
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+try:
+    from core.database import engine
+    from models.models import Base
+    from api.auth_routes import router as auth_router
+    from api.user_routes import router as user_router
+    from api.general_routes import router as general_router
+    from api.mutual_matching_routes import router as mutual_matching_router
+    from api.list_view import router as list_view_router
+
+    # Create database tables (with error handling)
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created/verified successfully")
+    except Exception as e:
+        logger.error(f"Error creating database tables: {e}")
+        # Continue anyway - tables might already exist
+except Exception as e:
+    logger.error(f"Error importing modules: {e}")
+    raise
 
 # Create FastAPI app
 app = FastAPI(
