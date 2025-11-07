@@ -2,15 +2,14 @@
 Vercel serverless function entry point for FastAPI backend
 This file handles all API requests routed from vercel.json
 """
-import sys
 import os
-import logging
 import json
+import logging
 import traceback
+import sys
 
 # Set up logging - do this first, before any other imports
 # Write to stderr so Vercel captures it
-import sys
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -185,4 +184,7 @@ def lambda_handler(event, context):
         error_msg = f"Fatal error in lambda_handler: {type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_msg)
         return create_error_response(f"Fatal error: {str(e)}", 500)
+
+# Expose handler alias for Vercel runtime
+handler = lambda_handler
 
