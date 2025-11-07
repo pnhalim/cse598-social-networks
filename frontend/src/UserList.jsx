@@ -454,46 +454,11 @@ const sortByOverlap = (list, mineSet) =>
           flex: 1;
         }
 
-        .user-name-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          margin-bottom: 5px;
-        }
-
         .user-name {
           font-size: 18px;
           font-weight: 800;
           color: var(--fg);
-          margin: 0;
-          flex: 1;
-        }
-
-        .match-score-badge {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 6px 10px;
-          border-radius: 12px;
-          background: linear-gradient(135deg, rgba(76,175,80,.3), rgba(76,175,80,.2));
-          color: #4caf50;
-          border: 1px solid rgba(76,175,80,.4);
-          font-size: 12px;
-          font-weight: 800;
-          white-space: nowrap;
-          flex-shrink: 0;
-        }
-
-        .match-score-icon {
-          font-size: 14px;
-          line-height: 1;
-        }
-
-        .match-score-text {
-          font-size: 11px;
-          font-weight: 900;
-          letter-spacing: 0.3px;
+          margin: 0 0 5px 0;
         }
 
         .user-badges {
@@ -950,15 +915,7 @@ const sortByOverlap = (list, mineSet) =>
                     {user.name ? user.name.charAt(0).toUpperCase() : '?'}
                   </div>
                   <div className="user-info">
-                    <div className="user-name-row">
-                      <h3 className="user-name">{user.name || 'Anonymous'}</h3>
-                      {user.match_score !== null && user.match_score !== undefined && (
-                        <div className="match-score-badge" title={`Match Score: ${(user.match_score * 100).toFixed(1)}%`}>
-                          <span className="match-score-icon">💯</span>
-                          <span className="match-score-text">{(user.match_score * 100).toFixed(0)}%</span>
-                        </div>
-                      )}
-                    </div>
+                    <h3 className="user-name">{user.name || 'Anonymous'}</h3>
                     <div className="user-badges">
                       {user.major && (
                         <div className="profile-badge major-badge" title={`Major: ${user.major}`}>
