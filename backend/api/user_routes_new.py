@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List
 from core.database import get_db
@@ -7,6 +7,7 @@ from models.schemas import (
     UserCreate, UserUpdate, UserResponse, UserListResponse, MessageResponse,
     FilterOptionsResponse, PreferencesUpdate
 )
+from services.utils import assign_frontend_design
 from config.auth_dependencies import get_current_user, get_current_active_user
 
 # Create router for user management routes

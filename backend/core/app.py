@@ -1,67 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
-import logging
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Import database components
-try:
-    from core.database import engine
-    from models.models import Base
-    
-    # Create database tables (with error handling)
-    if engine:
-        try:
-            Base.metadata.create_all(bind=engine)
-            logger.info("Database tables created/verified successfully")
-        except Exception as e:
-            logger.error(f"Error creating database tables: {e}")
-            # Continue anyway - tables might already exist or connection will fail later
-            # This allows the app to start and return proper error messages
-    else:
-        logger.warning("Database engine not available - tables will not be created. Set DATABASE_URL environment variable.")
-except Exception as e:
-    logger.error(f"Error importing database modules: {e}", exc_info=True)
 
 # Import routers individually so one failure doesn't prevent others from loading
-auth_router = None
-user_router = None
-general_router = None
-mutual_matching_router = None
-list_view_router = None
-
-try:
-    from api.auth_routes import router as auth_router
-    logger.info("Successfully imported auth_router")
-except Exception as e:
-    logger.error(f"Error importing auth_router: {e}", exc_info=True)
-
-try:
-    from api.user_routes import router as user_router
-    logger.info("Successfully imported user_router")
-except Exception as e:
-    logger.error(f"Error importing user_router: {e}", exc_info=True)
-
-try:
-    from api.general_routes import router as general_router
-    logger.info("Successfully imported general_router")
-except Exception as e:
-    logger.error(f"Error importing general_router: {e}", exc_info=True)
-
-try:
-    from api.mutual_matching_routes import router as mutual_matching_router
-    logger.info("Successfully imported mutual_matching_router")
-except Exception as e:
-    logger.error(f"Error importing mutual_matching_router: {e}", exc_info=True)
-
-try:
-    from api.list_view import router as list_view_router
-    logger.info("Successfully imported list_view_router")
-except Exception as e:
-    logger.error(f"Error importing list_view_router: {e}", exc_info=True)
+from api.auth_routes import router as auth_router
+from api.user_routes import router as user_router
+from api.general_routes import router as general_router
+from api.mutual_matching_routes import router as mutual_matching_router
+from api.list_view import router as list_view_router
 
 # Create FastAPI app
 app = FastAPI(
@@ -108,22 +54,15 @@ app.add_middleware(
 )
 
 # Include routers (only if they were imported successfully)
-if auth_router:
-    app.include_router(auth_router)
-if user_router:
-    app.include_router(user_router)
-if general_router:
-    app.include_router(general_router)
-if mutual_matching_router:
-    app.include_router(mutual_matching_router)
-if list_view_router:
-    app.include_router(list_view_router)
+app.include_router(auth_router)
+app.include_router(user_router)
+app.include_router(general_router)
+app.include_router(mutual_matching_router)
+app.include_router(list_view_router)
 
 # Add error handler for missing database
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    import traceback
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
     from fastapi.responses import JSONResponse
     return JSONResponse(
         status_code=500,
