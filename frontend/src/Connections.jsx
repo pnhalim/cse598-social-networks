@@ -5,8 +5,10 @@ import {
   markConnectionMet,
   getRatingCriteria,
   submitRating,
+  reportUser,
 } from "./authService";
 import { useSidebar } from "./SidebarContext";
+import { getFirstName, getInitial } from "./nameUtils";
 import collageUrl from "./assets/collage.jpg";
 
 export default function Connections() {
@@ -22,6 +24,10 @@ export default function Connections() {
   const [ratings, setRatings] = useState({});
   const [reflectionNote, setReflectionNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportStatus, setReportStatus] = useState(null);
+  const [isReporting, setIsReporting] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   useEffect(() => {
     loadConnections();
@@ -31,7 +37,26 @@ export default function Connections() {
     try {
       setLoading(true);
       const response = await getConnections();
-      setConnections(response.data);
+      const data = response.data;
+      
+      // Sort connections in reverse chronological order (newest first)
+      if (data.reached_out_to) {
+        data.reached_out_to.sort((a, b) => {
+          const dateA = new Date(a.created_at);
+          const dateB = new Date(b.created_at);
+          return dateB - dateA; // Descending order (newest first)
+        });
+      }
+      
+      if (data.reached_out_by) {
+        data.reached_out_by.sort((a, b) => {
+          const dateA = new Date(a.created_at);
+          const dateB = new Date(b.created_at);
+          return dateB - dateA; // Descending order (newest first)
+        });
+      }
+      
+      setConnections(data);
       setError("");
     } catch (err) {
       console.error("Error loading connections:", err);
@@ -131,6 +156,64 @@ export default function Connections() {
       day: "numeric",
     });
   };
+
+  const handleReportClick = (connection) => {
+    setSelectedConnection(connection);
+    setShowReportDialog(true);
+  };
+
+  const handleConfirmReport = async () => {
+    if (!selectedConnection) {
+      return;
+    }
+
+    setIsReporting(true);
+    setReportStatus(null);
+
+    try {
+      await reportUser(selectedConnection.user_id, null, "connections_view");
+      setReportStatus('success');
+      // Close dialog after 2 seconds
+      setTimeout(() => {
+        setShowReportDialog(false);
+        setReportStatus(null);
+        setSelectedConnection(null);
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to report user:', err);
+      setReportStatus('error');
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
+  const handleCancelReport = () => {
+    setShowReportDialog(false);
+    setReportStatus(null);
+    setSelectedConnection(null);
+  };
+
+  const handleMenuToggle = (connectionId, e) => {
+    e.stopPropagation();
+    setOpenMenuId(openMenuId === connectionId ? null : connectionId);
+  };
+
+  const handleReportFromMenu = (connection, e) => {
+    e.stopPropagation();
+    setOpenMenuId(null);
+    handleReportClick(connection);
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setOpenMenuId(null);
+    };
+    if (openMenuId) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openMenuId]);
 
   if (loading) {
     return (
@@ -578,6 +661,71 @@ export default function Connections() {
           opacity: 0.6;
         }
 
+        .connection-menu-button {
+          background: transparent;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 6px;
+          color: var(--fg);
+          cursor: pointer;
+          padding: 6px 10px;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          min-width: 32px;
+          height: 32px;
+        }
+
+        .connection-menu-button:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .connection-menu-dropdown {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          margin-top: 4px;
+          background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+          border: 1px solid rgba(255,255,255,.15);
+          border-radius: 8px;
+          padding: 4px;
+          min-width: 140px;
+          z-index: 100;
+          box-shadow: 0 4px 12px rgba(0,0,0,.3);
+          backdrop-filter: blur(10px);
+        }
+
+        .connection-menu-item {
+          padding: 10px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          color: var(--fg);
+          font-size: 13px;
+          font-weight: 600;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .connection-menu-item:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        .connection-menu-item.report {
+          color: #dc3545;
+        }
+
+        .connection-menu-item.report:hover {
+          background: rgba(220, 53, 69, 0.15);
+        }
+
+        .connection-menu-wrapper {
+          position: relative;
+        }
+
         .connection-notification-badge {
           position: absolute;
           top: -2px;
@@ -644,9 +792,7 @@ export default function Connections() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
                         <div className="connection-avatar-wrapper">
                           <div className="connection-avatar">
-                            {conn.name
-                              ? conn.name.charAt(0).toUpperCase()
-                              : conn.school_email?.charAt(0).toUpperCase() || "?"}
+                            {getInitial(conn.name || conn.school_email)}
                           </div>
                           {(conn.met === null || (conn.met === true && !conn.has_rating)) && (
                             <span className="connection-notification-badge"></span>
@@ -654,31 +800,52 @@ export default function Connections() {
                         </div>
                         <div className="connection-info">
                           <div className="connection-name">
-                            {conn.name || conn.school_email || "Unknown"}
+                            {getFirstName(conn.name || conn.school_email, "Unknown")}
                           </div>
                           <div className="connection-email">{conn.school_email}</div>
                         </div>
                       </div>
                       <div className="connection-actions" onClick={(e) => e.stopPropagation()}>
-                        {conn.met === null && (
-                          <button
-                            className="btn btn-secondary"
-                            onClick={() => {
-                              setSelectedConnection(conn);
-                              setShowMetDialog(true);
-                            }}
-                          >
-                            Did you meet?
-                          </button>
-                        )}
-                        {conn.met === true && !conn.has_rating && (
-                          <button
-                            className="btn btn-primary"
-                            onClick={() => handleOpenRating(conn)}
-                          >
-                            Rate Session
-                          </button>
-                        )}
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          {conn.met === null && (
+                            <button
+                              className="btn btn-secondary"
+                              onClick={() => {
+                                setSelectedConnection(conn);
+                                setShowMetDialog(true);
+                              }}
+                            >
+                              Did you meet?
+                            </button>
+                          )}
+                          {conn.met === true && !conn.has_rating && (
+                            <button
+                              className="btn btn-primary"
+                              onClick={() => handleOpenRating(conn)}
+                            >
+                              Rate Session
+                            </button>
+                          )}
+                          <div className="connection-menu-wrapper">
+                            <button
+                              className="connection-menu-button"
+                              onClick={(e) => handleMenuToggle(conn.id, e)}
+                              title="More options"
+                            >
+                              ⋯
+                            </button>
+                            {openMenuId === conn.id && (
+                              <div className="connection-menu-dropdown">
+                                <div
+                                  className="connection-menu-item report"
+                                  onClick={(e) => handleReportFromMenu(conn, e)}
+                                >
+                                  ⚠️ Report User
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <div className="connection-meta">
@@ -724,9 +891,7 @@ export default function Connections() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
                         <div className="connection-avatar-wrapper">
                           <div className="connection-avatar">
-                            {conn.name
-                              ? conn.name.charAt(0).toUpperCase()
-                              : conn.school_email?.charAt(0).toUpperCase() || "?"}
+                            {getInitial(conn.name || conn.school_email)}
                           </div>
                           {(conn.met === null || (conn.met === true && !conn.has_rating)) && (
                             <span className="connection-notification-badge"></span>
@@ -734,31 +899,52 @@ export default function Connections() {
                         </div>
                         <div className="connection-info">
                           <div className="connection-name">
-                            {conn.name || conn.school_email || "Unknown"}
+                            {getFirstName(conn.name || conn.school_email, "Unknown")}
                           </div>
                           <div className="connection-email">{conn.school_email}</div>
                         </div>
                       </div>
                       <div className="connection-actions" onClick={(e) => e.stopPropagation()}>
-                        {conn.met === null && (
-                          <button
-                            className="btn btn-secondary"
-                            onClick={() => {
-                              setSelectedConnection(conn);
-                              setShowMetDialog(true);
-                            }}
-                          >
-                            Did you meet?
-                          </button>
-                        )}
-                        {conn.met === true && !conn.has_rating && (
-                          <button
-                            className="btn btn-primary"
-                            onClick={() => handleOpenRating(conn)}
-                          >
-                            Rate Session
-                          </button>
-                        )}
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          {conn.met === null && (
+                            <button
+                              className="btn btn-secondary"
+                              onClick={() => {
+                                setSelectedConnection(conn);
+                                setShowMetDialog(true);
+                              }}
+                            >
+                              Did you meet?
+                            </button>
+                          )}
+                          {conn.met === true && !conn.has_rating && (
+                            <button
+                              className="btn btn-primary"
+                              onClick={() => handleOpenRating(conn)}
+                            >
+                              Rate Session
+                            </button>
+                          )}
+                          <div className="connection-menu-wrapper">
+                            <button
+                              className="connection-menu-button"
+                              onClick={(e) => handleMenuToggle(conn.id, e)}
+                              title="More options"
+                            >
+                              ⋯
+                            </button>
+                            {openMenuId === conn.id && (
+                              <div className="connection-menu-dropdown">
+                                <div
+                                  className="connection-menu-item report"
+                                  onClick={(e) => handleReportFromMenu(conn, e)}
+                                >
+                                  ⚠️ Report User
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <div className="connection-meta">
@@ -785,6 +971,73 @@ export default function Connections() {
         </div>
         </div>
 
+      {/* Report Dialog */}
+      {showReportDialog && selectedConnection && (
+        <div className="dialog-overlay" onClick={handleCancelReport}>
+          <div className="dialog" onClick={(e) => e.stopPropagation()}>
+            <h2 className="dialog-title">⚠️ Report User</h2>
+            <div className="dialog-content">
+              <p>
+                Are you sure you want to report{" "}
+                <strong>
+                  {getFirstName(selectedConnection.name || selectedConnection.school_email)}
+                </strong>
+                ? This action will be recorded and reviewed by our team.
+              </p>
+              
+              {reportStatus === 'success' && (
+                <div style={{
+                  marginTop: '16px',
+                  padding: '12px',
+                  background: 'rgba(40, 167, 69, 0.1)',
+                  border: '1px solid rgba(40, 167, 69, 0.3)',
+                  borderRadius: '8px',
+                  color: '#28a745',
+                  fontWeight: 600
+                }}>
+                  ✅ Report submitted successfully. Thank you for helping keep Study Buddy safe.
+                </div>
+              )}
+              
+              {reportStatus === 'error' && (
+                <div style={{
+                  marginTop: '16px',
+                  padding: '12px',
+                  background: 'rgba(220, 53, 69, 0.1)',
+                  border: '1px solid rgba(220, 53, 69, 0.3)',
+                  borderRadius: '8px',
+                  color: '#dc3545',
+                  fontWeight: 600
+                }}>
+                  ❌ Failed to submit report. Please try again.
+                </div>
+              )}
+            </div>
+            <div className="dialog-actions">
+              <button
+                className="btn btn-secondary"
+                onClick={handleCancelReport}
+                disabled={isReporting}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleConfirmReport}
+                disabled={isReporting || reportStatus === 'success'}
+                style={{
+                  background: reportStatus === 'success' ? '#28a745' : 'var(--maize)',
+                  borderColor: reportStatus === 'success' ? '#28a745' : 'var(--maize)',
+                  color: reportStatus === 'success' ? 'white' : '#111'
+                }}
+              >
+                {isReporting ? 'Submitting...' : reportStatus === 'success' ? '✓ Reported' : 'Confirm Report'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mark Met Dialog */}
       {showMetDialog && selectedConnection && (
         <div className="dialog-overlay" onClick={() => setShowMetDialog(false)}>
@@ -794,7 +1047,7 @@ export default function Connections() {
               <p>
                 Did you actually meet with{" "}
                 <strong>
-                  {selectedConnection.name || selectedConnection.school_email}
+                  {getFirstName(selectedConnection.name || selectedConnection.school_email)}
                 </strong>
                 ?
               </p>
@@ -836,7 +1089,7 @@ export default function Connections() {
               <p style={{ marginBottom: '16px', opacity: 0.9 }}>
                 How did it go with{" "}
                 <strong>
-                  {selectedConnection.name || selectedConnection.school_email}
+                  {getFirstName(selectedConnection.name || selectedConnection.school_email)}
                 </strong>?
               </p>
 

@@ -5,6 +5,7 @@ import api from "./api";
 import collageUrl from "./assets/collage.jpg";
 import { validateTextInput } from "./censorshipUtils";
 import { useSidebar } from "./SidebarContext";
+import { getFirstName, getInitial } from "./nameUtils";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -706,10 +707,10 @@ export default function Profile() {
           <div className="profile-sidebar">
             <div className="profile-header">
               <div className="profile-avatar">
-                {user?.name ? user.name.charAt(0).toUpperCase() : '?'}
+                {getInitial(user?.name)}
               </div>
               <div className="profile-info">
-                <h2>{user?.name || 'Anonymous'}</h2>
+                <h2>{getFirstName(user?.name)}</h2>
                 <p>{user?.school_email}</p>
               </div>
             </div>
@@ -769,7 +770,7 @@ export default function Profile() {
           <h3 className="section-title">Basic Information</h3>
           
           <div className="field">
-            <label className="field-label">Name</label>
+            <label className="field-label">First Name</label>
             {isEditing ? (
               <input
                 className="field-input"
@@ -777,9 +778,10 @@ export default function Profile() {
                 name="name"
                 value={editData.name}
                 onChange={handleInputChange}
+                placeholder="Enter your first name"
               />
             ) : (
-              <div className="field-value">{user?.name || <span className="not-provided">Not provided</span>}</div>
+              <div className="field-value">{user?.name ? getFirstName(user.name) : <span className="not-provided">Not provided</span>}</div>
             )}
             {fieldErrors.name && (
               <div style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '4px' }}>

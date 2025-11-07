@@ -348,13 +348,13 @@ export default function CompleteProfile() {
             <div className="section-title">Basic Information</div>
             
             <div>
-              <label className="label required" htmlFor="name">Full Name</label>
+              <label className="label required" htmlFor="name">First Name</label>
               <input
                 id="name"
                 className="input"
                 type="text"
                 name="name"
-                placeholder="Enter your full name"
+                placeholder="Enter your first name"
                 value={formData.name}
                 onChange={handleInputChange}
                 required

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { me } from "./authService";
 import UserList from "./UserList";
 import ProfileButton from "./ProfileButton";
+import { getFirstName } from "./nameUtils";
 
 export default function Home() {
   const nav = useNavigate();
@@ -51,7 +52,7 @@ export default function Home() {
     <div style={{ maxWidth: 720, margin: "2rem auto", color: "#eaeff5", position: "relative" }}>
       <ProfileButton />
       
-      <h1>Welcome{user?.name ? `, ${user.name}` : ""} 👋</h1>
+      <h1>Welcome{user?.name ? `, ${getFirstName(user.name)}` : ""} 👋</h1>
       <p>Your email: {user?.school_email || user?.email}</p>
       <p>Status: {user?.email_verified ? "Verified" : "Unverified"}</p>
       <p>Profile: {user?.profile_completed ? "Completed" : "Incomplete"}</p>

@@ -4,6 +4,7 @@ import ProfileButton from "./ProfileButton";
 import { me, getUsersList, selectStudyBuddy } from "./authService";
 import UserProfileModal from "./UserProfileModal";
 import { useSidebar } from "./SidebarContext";
+import { getFirstName, getInitial } from "./nameUtils";
 import collageUrl from "./assets/collage.jpg";
 
 export default function UserList() {
@@ -75,7 +76,7 @@ const sortByOverlap = (list, mineSet) =>
     if (sb !== sa) return sb - sa;
     
     // Finally by name (ascending)
-    return String(a.name || "").localeCompare(String(b.name || ""));
+    return String(getFirstName(a.name || "")).localeCompare(String(getFirstName(b.name || "")));
   });
 
   const applyFilters = () => {
@@ -923,10 +924,10 @@ const sortByOverlap = (list, mineSet) =>
               >
                 <div className="user-header">
                   <div className="user-avatar">
-                    {user.name ? user.name.charAt(0).toUpperCase() : '?'}
+                    {getInitial(user.name)}
                   </div>
                   <div className="user-info">
-                    <h3 className="user-name">{user.name || 'Anonymous'}</h3>
+                    <h3 className="user-name">{getFirstName(user.name)}</h3>
                     <div className="user-badges">
                       {user.major && (
                         <div className="profile-badge major-badge" title={`Major: ${user.major}`}>

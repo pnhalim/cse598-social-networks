@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { reachOut, me, reportUser, getReachOutStatus } from "./authService";
 import { validateTextInput } from "./censorshipUtils";
 import { useSidebar } from "./SidebarContext";
+import { getFirstName, getInitial } from "./nameUtils";
 
 export default function UserProfileModal({ user, isOpen, onClose }) {
   const { isOpen: isSidebarOpen } = useSidebar();
@@ -790,10 +791,10 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
           <div className="modal-sidebar">
             <div className="modal-header">
               <div className="modal-avatar">
-                {user.name ? user.name.charAt(0).toUpperCase() : '?'}
+                {getInitial(user.name)}
               </div>
               <div className="modal-user-info">
-                <h2>{user.name || 'Anonymous'}</h2>
+                <h2>{getFirstName(user.name)}</h2>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '8px' }}>
                   {user.trusted_badge_this_week && (
                     <div className="info-capsule" style={{ background: 'rgba(255, 203, 5, 0.2)', borderColor: 'var(--maize)' }}>
@@ -958,7 +959,7 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
       {showEmailPopup && (
         <div className="email-popup-overlay" onClick={closeEmailPopup}>
           <div className="email-popup" onClick={(e) => e.stopPropagation()}>
-            <h3>✉️ Reach Out to {user.name || 'This Person'}</h3>
+            <h3>✉️ Reach Out to {getFirstName(user.name, 'This Person')}</h3>
             {reachOutStatus && (
               <div style={{ 
                 marginBottom: '12px',
@@ -978,7 +979,7 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
               </div>
             )}
             <p style={{ color: 'var(--muted)', margin: '0 0 16px 0', fontSize: '14px' }}>
-              Write a quick note (optional) and we'll send an email to {user.name || 'them'} with both of your profiles! You'll be CC'd on the email so you can continue the conversation.
+              Write a quick note (optional) and we'll send an email to {getFirstName(user.name, 'them')} with both of your profiles! You'll be CC'd on the email so you can continue the conversation.
             </p>
             
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 700, color: 'var(--maize)', textTransform: 'uppercase' }}>
@@ -1045,7 +1046,7 @@ export default function UserProfileModal({ user, isOpen, onClose }) {
           <div className="email-popup" onClick={(e) => e.stopPropagation()}>
             <h3>⚠️ Report User</h3>
             <p style={{ color: 'var(--muted)', margin: '0 0 16px 0', fontSize: '14px' }}>
-              Are you sure you want to report <strong>{user.name || 'this user'}</strong>? This action will be recorded and reviewed by our team.
+              Are you sure you want to report <strong>{getFirstName(user.name, 'this user')}</strong>? This action will be recorded and reviewed by our team.
             </p>
             
             {reportStatus === 'success' && (
