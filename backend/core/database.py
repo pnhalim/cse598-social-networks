@@ -33,20 +33,23 @@ else:
     # Fall back to SQLite for local development (default)
     if IS_VERCEL:
         # On Vercel, SQLite won't work - need PostgreSQL
-        error_msg = (
-            "DATABASE_URL environment variable is not set. "
+        # Don't raise here - let it fail gracefully when trying to connect
+        # This allows the app to start and show a better error message
+        logger.warning(
+            "DATABASE_URL environment variable is not set on Vercel. "
             "SQLite cannot be used on Vercel's serverless platform. "
             "Please set up a PostgreSQL database (Neon Postgres recommended) "
             "and configure the DATABASE_URL environment variable."
         )
-        logger.error(error_msg)
-        raise ValueError(error_msg)
-    
-    # Local development - use SQLite
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    SQLALCHEMY_DATABASE_URL = f"sqlite:///{os.path.join(basedir, 'study_buddy.db')}"
-    connect_args = {"check_same_thread": False}  # Needed for SQLite
-    logger.info(f"Using SQLite database: {SQLALCHEMY_DATABASE_URL}")
+        # Use a placeholder that will fail gracefully
+        SQLALCHEMY_DATABASE_URL = "postgresql://missing-database-url"
+        connect_args = {}
+    else:
+        # Local development - use SQLite
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        SQLALCHEMY_DATABASE_URL = f"sqlite:///{os.path.join(basedir, 'study_buddy.db')}"
+        connect_args = {"check_same_thread": False}  # Needed for SQLite
+        logger.info(f"Using SQLite database: {SQLALCHEMY_DATABASE_URL}")
 
 # Create SQLAlchemy engine
 # Only use connection pooling for PostgreSQL (not SQLite)
@@ -57,6 +60,15 @@ try:
             connect_args=connect_args,
         )
         logger.info("SQLite engine created")
+    elif SQLALCHEMY_DATABASE_URL == "postgresql://missing-database-url":
+        # Placeholder for missing DATABASE_URL on Vercel
+        # Create a dummy engine that will fail gracefully on first use
+        logger.warning("Using placeholder database URL - DATABASE_URL must be configured")
+        engine = create_engine(
+            SQLALCHEMY_DATABASE_URL,
+            connect_args=connect_args,
+            pool_pre_ping=False,  # Don't try to ping invalid URL
+        )
     else:
         engine = create_engine(
             SQLALCHEMY_DATABASE_URL,
@@ -67,16 +79,35 @@ try:
         logger.info("PostgreSQL engine created")
 except Exception as e:
     logger.error(f"Error creating database engine: {e}")
-    raise
+    # Don't raise - create a dummy engine that will fail on use
+    # This allows the app to start and return proper error messages
+    engine = None
 
-# Create SessionLocal class
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Create SessionLocal class (only if engine exists)
+if engine:
+    try:
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    except Exception as e:
+        logger.error(f"Error creating sessionmaker: {e}")
+        SessionLocal = None
+else:
+    # Dummy sessionmaker for when engine creation failed
+    SessionLocal = None
 
 # Create Base class
 Base = declarative_base()
 
 # Dependency to get database session
 def get_db():
+    if not engine or not SessionLocal:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Database not configured. Please set DATABASE_URL environment variable. "
+                "For Vercel deployment, set up Neon Postgres through the Storage tab."
+            )
+        )
     db = SessionLocal()
     try:
         yield db

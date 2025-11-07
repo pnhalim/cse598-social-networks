@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // In production on Vercel, use relative URL for same-origin requests
-// In development, use the backend server URL
+// In development, use the backend server URL with /api prefix
 const getBaseURL = () => {
   const envURL = import.meta.env.VITE_API_BASE_URL;
   if (envURL) {
@@ -11,8 +11,8 @@ const getBaseURL = () => {
   if (import.meta.env.PROD) {
     return "/api"; // Same origin, will be handled by Vercel routing
   }
-  // Development fallback
-  return "http://localhost:8000";
+  // Development fallback - backend routes have /api prefix
+  return "http://localhost:8000/api";
 };
 
 const api = axios.create({

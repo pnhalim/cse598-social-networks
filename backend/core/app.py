@@ -17,15 +17,25 @@ try:
     from api.list_view import router as list_view_router
 
     # Create database tables (with error handling)
-    try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created/verified successfully")
-    except Exception as e:
-        logger.error(f"Error creating database tables: {e}")
-        # Continue anyway - tables might already exist
+    if engine:
+        try:
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database tables created/verified successfully")
+        except Exception as e:
+            logger.error(f"Error creating database tables: {e}")
+            # Continue anyway - tables might already exist or connection will fail later
+            # This allows the app to start and return proper error messages
+    else:
+        logger.warning("Database engine not available - tables will not be created. Set DATABASE_URL environment variable.")
 except Exception as e:
-    logger.error(f"Error importing modules: {e}")
-    raise
+    logger.error(f"Error importing modules: {e}", exc_info=True)
+    # Don't raise - let the app start so we can return proper error messages
+    # Set router variables to None so we can check later
+    auth_router = None
+    user_router = None
+    general_router = None
+    mutual_matching_router = None
+    list_view_router = None
 
 # Create FastAPI app
 app = FastAPI(
@@ -71,12 +81,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(auth_router)
-app.include_router(user_router)
-app.include_router(general_router)
-app.include_router(mutual_matching_router)
-app.include_router(list_view_router)
+# Include routers (only if they were imported successfully)
+if auth_router:
+    app.include_router(auth_router)
+if user_router:
+    app.include_router(user_router)
+if general_router:
+    app.include_router(general_router)
+if mutual_matching_router:
+    app.include_router(mutual_matching_router)
+if list_view_router:
+    app.include_router(list_view_router)
+
+# Add error handler for missing database
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    import traceback
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": str(exc) if str(exc) else "Internal server error",
+            "error": "Check server logs for details"
+        }
+    )
 
 # Custom OpenAPI schema to add security schemes
 def custom_openapi():

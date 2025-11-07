@@ -42,8 +42,9 @@ export default function ImageUpload({
       const formData = new FormData();
       formData.append('file', file);
 
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/user/${userId}/profile-picture`, {
+      const token = localStorage.getItem('jwt'); // Use 'jwt' to match axios interceptor
+      const apiBase = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:8000/api');
+      const response = await fetch(`${apiBase}/user/${userId}/profile-picture`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -76,8 +77,9 @@ export default function ImageUpload({
     onError?.("");
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/user/${userId}/profile-picture`, {
+      const token = localStorage.getItem('jwt'); // Use 'jwt' to match axios interceptor
+      const apiBase = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:8000/api');
+      const response = await fetch(`${apiBase}/user/${userId}/profile-picture`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
