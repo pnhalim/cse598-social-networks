@@ -97,10 +97,14 @@ export default function StudyBuddy() {
 
   useEffect(() => {
     formRef.current?.querySelector("input")?.focus();
-    // Clear messages when switching tabs
     setSubmitMessage("");
     setResendMessage("");
+    if (isSignUp) {
+      setShowForgot(false);
+      setFpMsg("");
+    }
   }, [isSignUp]);
+  
 
   const dismissOverlay = () => {
     if (!showOverlay || overlayLeaving) return;
@@ -641,89 +645,91 @@ export default function StudyBuddy() {
               )}
             </div>
           )}
-          {/* Forgot password entry point (always visible under the form) */}
-<div style={{ marginTop: 12, textAlign: "center" }}>
-  {!showForgot ? (
-    <button
-      type="button"
-      className="link"
-      onClick={() => {
-        setShowForgot(true);
-        setFpMsg("");
-        // Pre-fill with whatever they typed above
-        setFpEmail(email || "");
-      }}
-      style={{
-        color: "#FFCB05",
-        textDecoration: "underline",
-        background: "none",
-        border: "none",
-        cursor: "pointer"
-      }}
-    >
-      Forgot your password?
-    </button>
-  ) : (
-    <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-      <div className="input-wrap">
-        <input
-          className="input"
-          type="email"
-          placeholder="uniqname@umich.edu"
-          value={fpEmail}
-          onChange={(e) => setFpEmail(e.target.value)}
-        />
-      </div>
-      <button
-        type="button"
-        className="btn"
-        disabled={fpLoading || !fpEmail}
-        onClick={async () => {
-          try {
-            setFpLoading(true);
-            setFpMsg("");
-            await requestPasswordReset(fpEmail);
-            setFpMsg("If an account exists, you'll receive a reset email shortly.");
-          } catch (e) {
-            const msg = e?.response?.data?.detail || "Could not start password reset.";
-            setFpMsg(msg);
-          } finally {
-            setFpLoading(false);
-          }
-        }}
-        style={{ opacity: fpLoading ? 0.7 : 1 }}
-      >
-        {fpLoading ? "Sending..." : "Send reset email"}
-      </button>
-      <button
-        type="button"
-        className="link"
-        onClick={() => { setShowForgot(false); setFpMsg(""); }}
-        style={{ color: "#C8D3DE", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}
-      >
-        Cancel
-      </button>
+        {/* Forgot password entry point (login only) */}
+        {!isSignUp && (
+          <div style={{ marginTop: 12, textAlign: "center" }}>
+            {!showForgot ? (
+              <button
+                type="button"
+                className="link"
+                onClick={() => {
+                  setShowForgot(true);
+                  setFpMsg("");
+                  setFpEmail(email || "");
+                }}
+                style={{
+                  color: "#FFCB05",
+                  textDecoration: "underline",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer"
+                }}
+              >
+                Forgot your password?
+              </button>
+            ) : (
+              <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                <div className="input-wrap">
+                  <input
+                    className="input"
+                    type="email"
+                    placeholder="uniqname@umich.edu"
+                    value={fpEmail}
+                    onChange={(e) => setFpEmail(e.target.value)}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={fpLoading || !fpEmail}
+                  onClick={async () => {
+                    try {
+                      setFpLoading(true);
+                      setFpMsg("");
+                      await requestPasswordReset(fpEmail);
+                      setFpMsg("If an account exists, you'll receive a reset email shortly.");
+                    } catch (e) {
+                      const msg = e?.response?.data?.detail || "Could not start password reset.";
+                      setFpMsg(msg);
+                    } finally {
+                      setFpLoading(false);
+                    }
+                  }}
+                  style={{ opacity: fpLoading ? 0.7 : 1 }}
+                >
+                  {fpLoading ? "Sending..." : "Send reset email"}
+                </button>
+                <button
+                  type="button"
+                  className="link"
+                  onClick={() => { setShowForgot(false); setFpMsg(""); }}
+                  style={{ color: "#C8D3DE", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}
+                >
+                  Cancel
+                </button>
 
-      {fpMsg && (
-        <div
-          style={{
-            marginTop: 4,
-            padding: 8,
-            borderRadius: 6,
-            backgroundColor: fpMsg.startsWith("If an account")
-              ? "rgba(40,167,69,.2)"
-              : "rgba(220,53,69,.2)",
-            color: fpMsg.startsWith("If an account") ? "#28a745" : "#dc3545",
-            border: `1px solid ${fpMsg.startsWith("If an account") ? "#28a745" : "#dc3545"}`,
-            fontSize: 12
-          }}
-        >
-          {fpMsg}
-        </div>
-      )}
-    </div>
-  )}
-</div>
+                {fpMsg && (
+                  <div
+                    style={{
+                      marginTop: 4,
+                      padding: 8,
+                      borderRadius: 6,
+                      backgroundColor: fpMsg.startsWith("If an account")
+                        ? "rgba(40,167,69,.2)"
+                        : "rgba(220,53,69,.2)",
+                      color: fpMsg.startsWith("If an account") ? "#28a745" : "#dc3545",
+                      border: `1px solid ${fpMsg.startsWith("If an account") ? "#28a745" : "#dc3545"}`,
+                      fontSize: 12
+                    }}
+                  >
+                    {fpMsg}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
 
         </section>
 
