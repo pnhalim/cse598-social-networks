@@ -33,23 +33,53 @@ def _apply_user_preferences_query(db: Session, current_user: User):
     
     # Still respect the candidate users' preferences: if they toggled a filter, they require a match
     # This ensures we don't show users who explicitly don't want to be matched with the current user
+    # 
+    # Logic: Show a candidate if:
+    # 1. They don't require a match for this field (match_by_* == False), OR
+    # 2. They require a match but don't have the field set (can't enforce requirement), OR
+    # 3. They require a match, have the field set, and it matches current_user's field
+    
     # Candidate requires same gender
-    if current_user.gender:
-        query = query.filter(or_(User.match_by_gender == False, User.gender == current_user.gender))
-    else:
-        query = query.filter(User.match_by_gender == False)
+    query = query.filter(
+        or_(
+            User.match_by_gender == False,  # Candidate doesn't require gender match
+            User.gender == None,  # Candidate requires match but doesn't have gender set
+            and_(
+                User.match_by_gender == True,
+                User.gender != None,
+                current_user.gender != None,
+                User.gender == current_user.gender
+            )  # Candidate requires match and genders match
+        )
+    )
 
     # Candidate requires same major
-    if current_user.major:
-        query = query.filter(or_(User.match_by_major == False, User.major == current_user.major))
-    else:
-        query = query.filter(User.match_by_major == False)
+    query = query.filter(
+        or_(
+            User.match_by_major == False,  # Candidate doesn't require major match
+            User.major == None,  # Candidate requires match but doesn't have major set
+            and_(
+                User.match_by_major == True,
+                User.major != None,
+                current_user.major != None,
+                User.major == current_user.major
+            )  # Candidate requires match and majors match
+        )
+    )
 
     # Candidate requires same academic year
-    if current_user.academic_year:
-        query = query.filter(or_(User.match_by_academic_year == False, User.academic_year == current_user.academic_year))
-    else:
-        query = query.filter(User.match_by_academic_year == False)
+    query = query.filter(
+        or_(
+            User.match_by_academic_year == False,  # Candidate doesn't require academic year match
+            User.academic_year == None,  # Candidate requires match but doesn't have academic_year set
+            and_(
+                User.match_by_academic_year == True,
+                User.academic_year != None,
+                current_user.academic_year != None,
+                User.academic_year == current_user.academic_year
+            )  # Candidate requires match and academic years match
+        )
+    )
 
     return query
 
