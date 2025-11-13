@@ -26,6 +26,12 @@ export default function Home() {
           return;
         }
         
+        // Check if survey is completed, redirect if not
+        if (!res.data.survey_completed) {
+          nav("/survey", { replace: true });
+          return;
+        }
+        
         // Check if onboarding is completed, redirect if not
         if (!res.data.onboarding_completed) {
           nav("/onboarding", { replace: true });

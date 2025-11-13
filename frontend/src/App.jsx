@@ -4,6 +4,7 @@ import Login from "./Login.jsx";
 import SetPassword from "./SetPassword.jsx";
 import VerifyEmail from "./VerifyEmail.jsx";
 import CompleteProfile from "./CompleteProfile.jsx";
+import Survey from "./Survey.jsx";
 import Onboarding from "./Onboarding.jsx";
 import Profile from "./Profile.jsx";
 import Home from "./Home.jsx";
@@ -19,6 +20,14 @@ export default function App() {
         <Route path="/set-password/:token" element={<SetPassword />} />
         <Route path="/complete-profile/:user_id" element={<CompleteProfile />} />
         <Route path="/reset-password/:code" element={<ResetPassword />} />
+        <Route
+           path="/survey"
+           element={
+             <ProtectedRoute>
+               <Survey />
+             </ProtectedRoute>
+           }
+         />
         <Route
            path="/onboarding"
            element={

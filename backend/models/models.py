@@ -40,6 +40,7 @@ class User(Base):
     match_by_classes = Column(Boolean, default=False)  # For similar classes (classes_taking, classes_taken)
     
     # Onboarding tracking
+    survey_completed = Column(Boolean, default=False)  # Track if user has completed the pre-survey
     onboarding_completed = Column(Boolean, default=False)  # Track if user has completed onboarding with preferences
     
     # Reputation system
@@ -177,6 +178,43 @@ class UserNote(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     note_text = Column(Text, nullable=False)  # "What made this session work well?" response
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    
+    # Relationship
+    user = relationship("User")
+    
+    __table_args__ = (
+        {"extend_existing": True},
+    )
+
+
+class SurveyResponse(Base):
+    __tablename__ = "survey_responses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    
+    # Likert scale questions (1-5)
+    q1_study_alone = Column(Integer, nullable=False)  # "I usually study alone for my classes."
+    q2_enjoy_studying_with_others = Column(Integer, nullable=False)  # "I enjoy studying or doing coursework with at least one other person."
+    q3_easily_find_study_buddy = Column(Integer, nullable=False)  # "When I want a study buddy, I can easily find someone."
+    q4_wish_more_people = Column(Integer, nullable=False)  # "I wish I had more people to study with in my classes."
+    q5_coordinating_barrier = Column(Integer, nullable=False)  # "Coordinating time and location is a barrier to studying with others."
+    q6_worry_awkward = Column(Integer, nullable=False)  # "I worry that studying with someone new will feel awkward."
+    q7_comfortable_approaching = Column(Integer, nullable=False)  # "I feel comfortable approaching a classmate I don't know well to ask if they want to study."
+    q8_comfortable_online_platforms = Column(Integer, nullable=False)  # "I feel comfortable using online class platforms (e.g., Piazza, Discord, Ed) to find people to study or work with."
+    q9_avoid_asking_afraid_no = Column(Integer, nullable=False)  # "I avoid asking classmates to study because I'm afraid they will say no."
+    q10_feel_at_ease = Column(Integer, nullable=False)  # "Once I start a study session with someone, I usually feel at ease."
+    q11_pressure_keep_studying = Column(Integer, nullable=False)  # "I feel pressure to keep studying with someone once I've started, even if it doesn't feel like a good fit."
+    q12_feel_belong = Column(Integer, nullable=False)  # "I feel like I belong in my major or academic program."
+    q13_core_group_peers = Column(Integer, nullable=False)  # "I have a core group of peers I can rely on for academic support."
+    q14_students_open_collaborating = Column(Integer, nullable=False)  # "Students in my classes are generally open to collaborating."
+    
+    # Short answer questions
+    q15_hardest_part = Column(Text, nullable=False)  # "What is the hardest part about finding someone to study with right now?"
+    q16_bad_experience = Column(Text, nullable=False)  # "If you've had a bad experience with study buddies or study groups in the past, what happened, and how did it affect you?"
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationship
     user = relationship("User")

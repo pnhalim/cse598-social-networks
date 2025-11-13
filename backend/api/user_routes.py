@@ -5,14 +5,14 @@ from typing import List
 from datetime import datetime, date
 from core.database import get_db
 
-from models.models import User, UserReport, ReachOut, StudySessionRating, UserNote
+from models.models import User, UserReport, ReachOut, StudySessionRating, UserNote, SurveyResponse
 from models.schemas import (
     UserCreate, UserUpdate, UserResponse, UserListResponse, MessageResponse,
     FilterOptionsResponse, PreferencesUpdate, ReachOutRequest, ReachOutResponse,
     ReportRequest, ReportResponse, ReachOutStatusResponse,
     ConnectionsResponse, ConnectionInfo, MarkMetRequest, MarkMetResponse,
     RatingCriteriaResponse, SubmitRatingRequest, SubmitRatingResponse,
-    UserNotesResponse, UserNoteResponse
+    UserNotesResponse, UserNoteResponse, SurveySubmission, SurveySubmissionResponse
 )
 from services.reputation_service import get_random_criteria, update_user_reputation
 from services.utils import assign_frontend_design
@@ -104,6 +104,47 @@ def update_user(user_update: UserUpdate, current_user: User = Depends(get_curren
     
     return current_user
 
+# Submit survey responses
+@router.post("/survey/submit", response_model=SurveySubmissionResponse, status_code=status.HTTP_201_CREATED)
+def submit_survey(
+    survey: SurveySubmission,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Submit survey responses. User must have completed profile first."""
+    # User must have completed profile first
+    if not current_user.profile_completed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please complete your profile first"
+        )
+    
+    # Check if survey already exists
+    existing_survey = db.query(SurveyResponse).filter(
+        SurveyResponse.user_id == current_user.id
+    ).first()
+    
+    if existing_survey:
+        # Update existing survey
+        for field, value in survey.dict().items():
+            setattr(existing_survey, field, value)
+    else:
+        # Create new survey response
+        survey_data = survey.dict()
+        survey_data['user_id'] = current_user.id
+        new_survey = SurveyResponse(**survey_data)
+        db.add(new_survey)
+    
+    # Mark survey as completed
+    current_user.survey_completed = True
+    
+    db.commit()
+    
+    return SurveySubmissionResponse(
+        message="Survey submitted successfully",
+        survey_completed=True
+    )
+
 # Complete onboarding with preferences
 @router.post("/onboarding/complete", response_model=UserResponse)
 def complete_onboarding(prefs: PreferencesUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -113,6 +154,13 @@ def complete_onboarding(prefs: PreferencesUpdate, current_user: User = Depends(g
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Please complete your profile first"
+        )
+    
+    # User must have completed survey first
+    if not current_user.survey_completed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please complete the survey first"
         )
     
     # Update preference flags

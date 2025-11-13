@@ -110,6 +110,7 @@ class UserResponse(UserBase):
     match_by_study_preferences: Optional[bool] = None
     match_by_classes: Optional[bool] = None
     # Onboarding tracking
+    survey_completed: Optional[bool] = None
     onboarding_completed: Optional[bool] = None
     # Reputation system
     reputation_score: Optional[int] = None
@@ -365,3 +366,49 @@ class MeetingOccurrenceResponse(BaseModel):
 class StatisticsResponse(BaseModel):
     meeting_occurrence: MeetingOccurrenceResponse
     reputation_reach_outs: ReputationReachOutStatsResponse
+
+# Survey schemas
+class SurveySubmission(BaseModel):
+    # Likert scale questions (1-5)
+    q1_study_alone: int  # "I usually study alone for my classes."
+    q2_enjoy_studying_with_others: int  # "I enjoy studying or doing coursework with at least one other person."
+    q3_easily_find_study_buddy: int  # "When I want a study buddy, I can easily find someone."
+    q4_wish_more_people: int  # "I wish I had more people to study with in my classes."
+    q5_coordinating_barrier: int  # "Coordinating time and location is a barrier to studying with others."
+    q6_worry_awkward: int  # "I worry that studying with someone new will feel awkward."
+    q7_comfortable_approaching: int  # "I feel comfortable approaching a classmate I don't know well to ask if they want to study."
+    q8_comfortable_online_platforms: int  # "I feel comfortable using online class platforms (e.g., Piazza, Discord, Ed) to find people to study or work with."
+    q9_avoid_asking_afraid_no: int  # "I avoid asking classmates to study because I'm afraid they will say no."
+    q10_feel_at_ease: int  # "Once I start a study session with someone, I usually feel at ease."
+    q11_pressure_keep_studying: int  # "I feel pressure to keep studying with someone once I've started, even if it doesn't feel like a good fit."
+    q12_feel_belong: int  # "I feel like I belong in my major or academic program."
+    q13_core_group_peers: int  # "I have a core group of peers I can rely on for academic support."
+    q14_students_open_collaborating: int  # "Students in my classes are generally open to collaborating."
+    
+    # Short answer questions
+    q15_hardest_part: str  # "What is the hardest part about finding someone to study with right now?"
+    q16_bad_experience: str  # "If you've had a bad experience with study buddies or study groups in the past, what happened, and how did it affect you?"
+    
+    @validator('q1_study_alone', 'q2_enjoy_studying_with_others', 'q3_easily_find_study_buddy', 
+               'q4_wish_more_people', 'q5_coordinating_barrier', 'q6_worry_awkward', 
+               'q7_comfortable_approaching', 'q8_comfortable_online_platforms', 
+               'q9_avoid_asking_afraid_no', 'q10_feel_at_ease', 'q11_pressure_keep_studying', 
+               'q12_feel_belong', 'q13_core_group_peers', 'q14_students_open_collaborating')
+    def validate_likert_scale(cls, v):
+        if v < 1 or v > 5:
+            raise ValueError('Likert scale responses must be between 1 and 5')
+        return v
+    
+    @validator('q15_hardest_part', 'q16_bad_experience')
+    def validate_text_length(cls, v):
+        if not v or len(v.strip()) == 0:
+            raise ValueError('Short answer questions are required')
+        if len(v.strip()) < 10:
+            raise ValueError('Please provide a more detailed response (at least 10 characters)')
+        if len(v) > 1000:
+            raise ValueError('Response is too long (maximum 1000 characters)')
+        return v.strip()
+
+class SurveySubmissionResponse(BaseModel):
+    message: str
+    survey_completed: bool

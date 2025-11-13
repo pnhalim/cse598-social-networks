@@ -705,19 +705,13 @@ const sortByOverlap = (list, mineSet) =>
           cursor:pointer;
           transition:all .2s ease;
           position: absolute;
-          right: calc((100% - min(1200px, 100%)) / 2);
+          right: 20px;
           margin-top: 4px;
         }
         
-        @media (max-width: 1300px) {
-          .filter-trigger {
-            right: calc(50% - 45vw); /* more fluid on narrower screens */
-          }
-        }
-
         @media (max-width: 768px) {
           .filter-trigger {
-            right: 20px; /* prevent clipping on small devices */
+            right: 10px; /* prevent clipping on small devices */
           }
         }
         .filter-trigger:hover{
@@ -731,6 +725,7 @@ const sortByOverlap = (list, mineSet) =>
           top: calc(100% + 8px);
           right: 0;
           width: 380px;
+          max-width: calc(100vw - 40px);
           background: rgba(14,14,16,.95);
           border: 1px solid rgba(255,255,255,.12);
           border-radius: 12px;
@@ -738,6 +733,14 @@ const sortByOverlap = (list, mineSet) =>
           backdrop-filter: blur(10px);
           padding: 14px 16px;
           z-index: 10;
+        }
+        
+        @media (max-width: 768px) {
+          .filter-dropdown {
+            right: -10px;
+            width: calc(100vw - 20px);
+            max-width: 380px;
+          }
         }
 
         /* Two-column layout — label left, option right, aligned neatly */

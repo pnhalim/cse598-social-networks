@@ -16,6 +16,23 @@ try:
         try:
             Base.metadata.create_all(bind=engine)
             logger.info("✅ Database tables created/verified successfully")
+            
+            # Run survey migration automatically on startup (idempotent, safe to run multiple times)
+            try:
+                import sys
+                import os
+                # Add parent directory to path to import migrate_add_survey
+                backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                if backend_dir not in sys.path:
+                    sys.path.insert(0, backend_dir)
+                from migrate_add_survey import migrate_database
+                if migrate_database():
+                    logger.info("✅ Survey migration completed successfully")
+                else:
+                    logger.warning("⚠️  Survey migration had issues, but continuing...")
+            except Exception as e:
+                logger.warning(f"⚠️  Survey migration error (non-critical): {e}")
+                # Continue anyway - migration can be run manually if needed
         except Exception as e:
             logger.warning(f"⚠️  Error creating database tables: {e}")
             # Continue anyway - tables might already exist or connection will fail later
@@ -151,8 +168,10 @@ if cors_origins_env == "*":
     allowed_origins = [
         frontend_url,
         "http://localhost:5173",
+        "http://localhost:5174",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
         "http://127.0.0.1:3000"
     ]
 else:
@@ -164,6 +183,8 @@ else:
     # Also include common localhost origins for development
     if "http://localhost:5173" not in allowed_origins:
         allowed_origins.append("http://localhost:5173")
+    if "http://localhost:5174" not in allowed_origins:
+        allowed_origins.append("http://localhost:5174")
     if "http://localhost:3000" not in allowed_origins:
         allowed_origins.append("http://localhost:3000")
 

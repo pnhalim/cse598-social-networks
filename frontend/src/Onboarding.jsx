@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import collageUrl from "./assets/collage.jpg";
 import api from "./api";
@@ -23,6 +23,21 @@ export default function Onboarding() {
       [key]: !prev[key]
     }));
   };
+
+  useEffect(() => {
+    // Check if user has completed survey, redirect if not
+    const checkSurveyStatus = async () => {
+      try {
+        const response = await api.get("/me");
+        if (!response.data.survey_completed) {
+          navigate("/survey", { replace: true });
+        }
+      } catch (error) {
+        console.error("Error checking survey status:", error);
+      }
+    };
+    checkSurveyStatus();
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

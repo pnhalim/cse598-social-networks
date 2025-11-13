@@ -129,7 +129,7 @@ export default function CompleteProfile() {
       if (response.data.message) {
         setSubmitMessage("Profile completed successfully! Welcome to Study Buddy.");
         setTimeout(() => {
-          navigate("/onboarding", { replace: true });
+          navigate("/survey", { replace: true });
         }, 2000);
       }
     } catch (error) {
